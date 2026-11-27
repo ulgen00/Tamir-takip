@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tamir Defteri</title>
+<style>
+:root{--bg:#EDEFEA;--surf:#FAFAF7;--ink:#1B2A2F;--mut:#5E6E72;--line:#D5DAD3;--acc:#0E5A6B;--accink:#fff;--in:#1E7A4C;--out:#B23A2E;
+--c0:#8A5600;--b0:#F6E7C8;--c1:#0E5A6B;--b1:#D4E8EC;--c2:#1E7A4C;--b2:#D3EBDD;--c3:#5E6E72;--b3:#E2E5E0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12191B;--surf:#1B2528;--ink:#E6ECEA;--mut:#93A3A6;--line:#2B383B;--acc:#5DB7C9;--accink:#08171B;--in:#5FCB93;--out:#F08A7E;
+--c0:#F0C36B;--b0:#3A2F14;--c1:#8CD0DE;--b1:#16353C;--c2:#7FDDAA;--b2:#173826;--c3:#93A3A6;--b3:#273134;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12191B;--surf:#1B2528;--ink:#E6ECEA;--mut:#93A3A6;--line:#2B383B;--acc:#5DB7C9;--accink:#08171B;--in:#5FCB93;--out:#F08A7E;
+--c0:#F0C36B;--b0:#3A2F14;--c1:#8CD0DE;--b1:#16353C;--c2:#7FDDAA;--b2:#173826;--c3:#93A3A6;--b3:#273134;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 "Times New Roman",Times,"Liberation Serif",serif}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+main{max-width:640px;margin:0 auto;padding:12px 14px 120px}
+h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
+.row{display:flex;gap:8px;align-items:center}.sp{justify-content:space-between}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
+.item{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.mut{color:var(--mut);font-size:14px}.b{font-weight:650}
+.chip{display:inline-block;font-size:13px;font-weight:600;padding:2px 9px;border-radius:99px}
+.s0{color:var(--c0);background:var(--b0)}.s1{color:var(--c1);background:var(--b1)}.s2{color:var(--c2);background:var(--b2)}.s3{color:var(--c3);background:var(--b3)}
+.in{color:var(--in)}.out{color:var(--out)}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+.tabs button,.btn{font:inherit;border:1px solid var(--line);background:var(--surf);color:var(--ink);border-radius:99px;padding:8px 14px;min-height:44px;cursor:pointer;white-space:nowrap}
+.tabs button.on{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+.btn.p{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:650}
+.btn.d{color:var(--out)}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--surf);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav button{flex:1;font:inherit;font-size:14px;background:none;border:0;color:var(--mut);padding:12px 4px;min-height:52px;cursor:pointer}
+nav button.on{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var(--acc)}
+.fab{position:fixed;right:16px;bottom:calc(70px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:11px;min-height:46px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.big{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.empty{text-align:center;color:var(--mut);padding:32px 12px}
+.scan{position:fixed;inset:0;background:#000;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
+.scan video{width:100%;max-height:65%;object-fit:cover;border-radius:12px}
+.scanhint{color:#fff;text-align:center}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<button class="fab" id="fab" aria-label="Yeni kayıt ekle">+</button>
+<nav id="nav"></nav>
+<script>
+const ST=["Bekliyor","Tamirde","Hazır","Teslim edildi"];
+const CAT_IN=["Tamir","Aksesuar satışı","Diğer gelir"],CAT_OUT=["Parça","Kira","Fatura","Maaş","Diğer gider"];
+let db={repairs:[],tx:[]},view="repairs",flt="all",month=new Date().toISOString().slice(0,7);
+try{const s=localStorage.getItem("tamir-defteri-v1");if(s)db=JSON.parse(s)}catch(e){}
+const save=()=>{try{localStorage.setItem("tamir-defteri-v1",JSON.stringify(db))}catch(e){}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=()=>new Date().toISOString().slice(0,10);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>(Number(n)||0).toLocaleString("tr-TR",{maximumFractionDigits:2})+" ₺";
+const dfmt=d=>d?d.split("-").reverse().join("."):"";
+const $=s=>document.querySelector(s);
+
+function render(){
+  $("#nav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}">${t}</button>`).join("")+`<button data-themebtn aria-label="Tema değiştir">Tema: ${themeLabel()}</button>`;
+  $("#fab").style.display=view=="sum"?"none":"block";
+  $("#app").innerHTML=view=="repairs"?vRepairs():view=="cash"?vCash():vSum();
+}
+function vRepairs(){
+  const counts=ST.map((_,i)=>db.repairs.filter(r=>r.st==i).length);
+  let list=db.repairs.filter(r=>flt=="all"||r.st==flt).sort((a,b)=>b.date.localeCompare(a.date));
+  return `<h1>Tamire gelen cihazlar</h1>
+  <div class="tabs"><button class="${flt=="all"?"on":""}" data-f="all">Hepsi ${db.repairs.length}</button>${ST.map((s,i)=>`<button class="${flt==i?"on":""}" data-f="${i}">${s} ${counts[i]}</button>`).join("")}</div>
+  ${list.length?list.map(r=>`<button class="card item" data-r="${r.id}"><div class="row sp"><span class="b">${esc(r.model)}</span><span class="chip s${r.st}">${ST[r.st]}</span></div>
+  <div class="mut">${esc(r.name)}${r.phone?" · "+esc(r.phone):""}</div><div class="mut">${esc(r.issue)}</div>${r.imei?`<div class="mut">IMEI ${esc(r.imei)}</div>`:""}
+  <div class="row sp" style="margin-top:6px"><span class="mut">${dfmt(r.date)}</span><span class="b">${money(r.price)}</span></div></button>`).join(""):`<div class="empty">Henüz cihaz yok. Sağ alttaki + ile ilk cihazı kaydedin.</div>`}`;
+}
+function vCash(){
+  const tx=db.tx.filter(t=>t.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
+  const inc=tx.filter(t=>t.type=="in").reduce((a,t)=>a+t.amt,0),exp=tx.filter(t=>t.type=="out").reduce((a,t)=>a+t.amt,0);
+  return `<h1>Kasa</h1>${monthBar()}
+  <div class="g2" style="margin-bottom:8px"><div class="card" style="margin:0"><div class="mut">Gelir</div><div class="b in">${money(inc)}</div></div><div class="card" style="margin:0"><div class="mut">Gider</div><div class="b out">${money(exp)}</div></div></div>
+  ${tx.length?tx.map(t=>`<button class="card item" data-t="${t.id}"><div class="row sp"><span class="b">${esc(t.cat)}</span><span class="b ${t.type}">${t.type=="in"?"+":"−"}${money(t.amt)}</span></div><div class="mut">${dfmt(t.date)}${t.note?" · "+esc(t.note):""}</div></button>`).join(""):`<div class="empty">Bu ay kayıt yok. + ile gelir veya gider ekleyin.</div>`}`;
+}
+function monthBar(){
+  const [y,m]=month.split("-"),n=new Date(y,m-1,1).toLocaleDateString("tr-TR",{month:"long",year:"numeric"});
+  return `<div class="row sp" style="margin-bottom:10px"><button class="btn" data-m="-1" aria-label="Önceki ay">‹</button><span class="b">${n}</span><button class="btn" data-m="1" aria-label="Sonraki ay">›</button></div>`;
+}
+function vSum(){
+  const tx=db.tx.filter(t=>t.date.startsWith(month));
+  const inc=tx.filter(t=>t.type=="in").reduce((a,t)=>a+t.amt,0),exp=tx.filter(t=>t.type=="out").reduce((a,t)=>a+t.amt,0);
+  const open=db.repairs.filter(r=>r.st<3),owed=open.reduce((a,r)=>a+(+r.price||0),0);
+  const cats={};tx.filter(t=>t.type=="out").forEach(t=>cats[t.cat]=(cats[t.cat]||0)+t.amt);
+  return `<h1>Özet</h1>${monthBar()}
+  <div class="card"><div class="mut">Net kâr</div><div class="big ${inc-exp>=0?"in":"out"}">${money(inc-exp)}</div><div class="mut">Gelir ${money(inc)} − Gider ${money(exp)}</div></div>
+  <div class="card"><div class="mut">Açık işler</div><div class="big">${open.length} cihaz</div><div class="mut">Teslimde beklenen tahsilat: ${money(owed)}</div>
+  <div style="margin-top:8px">${ST.slice(0,3).map((s,i)=>`<span class="chip s${i}" style="margin:0 6px 6px 0">${s}: ${db.repairs.filter(r=>r.st==i).length}</span>`).join("")}</div></div>
+  <div class="card"><div class="b" style="margin-bottom:6px">Gider dağılımı</div>${Object.keys(cats).length?Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row sp"><span>${esc(k)}</span><span class="out">${money(v)}</span></div>`).join(""):`<div class="mut">Bu ay gider yok.</div>`}</div>`;
+}
+function sheet(html){
+  closeSheet();const d=document.createElement("div");d.className="sheetbg";d.id="sh";
+  d.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+  d.addEventListener("click",e=>{if(e.target==d)closeSheet()});document.body.appendChild(d);
+}
+function closeSheet(){const s=$("#sh");if(s)s.remove()}
+const val=id=>$("#"+id).value.trim();
+
+function repairForm(id){
+  const r=db.repairs.find(x=>x.id==id)||{};autoModel="";lastTac="";tacIndex();
+  sheet(`<h1>${id?"Cihaz detayı":"Yeni cihaz"}</h1>
+  <label>Müşteri adı</label><input id="f_name" value="${esc(r.name)}">
+  <label>Telefon numarası</label><input id="f_phone" type="tel" inputmode="tel" value="${esc(r.phone)}">
+  <label>Cihaz (marka / model)</label><input id="f_model" value="${esc(r.model)}" placeholder="Örn. Samsung A54">
+  <label>IMEI</label><div class="row"><input id="f_imei" inputmode="numeric" maxlength="17" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><button class="btn" type="button" data-scan>Barkod tara</button></div><a class="btn" href="https://www.turkiye.gov.tr/imei-sorgulama" target="_blank" rel="noopener" data-egov style="display:inline-block;margin-top:8px">e-Devlet’te marka/model sorgula</a><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div>
+  <label>Arıza / yapılacak iş</label><textarea id="f_issue" rows="2">${esc(r.issue)}</textarea>
+  <div class="g2"><div><label>Ücret (₺)</label><input id="f_price" type="number" inputmode="decimal" value="${r.price??""}"></div><div><label>Parça maliyeti (₺)</label><input id="f_cost" type="number" inputmode="decimal" value="${r.cost??""}"></div></div>
+  <label>Parçanın alındığı toptancı</label><input id="f_sup" list="suplist" value="${esc(r.sup)}" placeholder="Örn. Ahmet Telekom"><datalist id="suplist">${[...new Set(db.repairs.map(x=>x.sup).filter(Boolean))].map(s=>`<option value="${esc(s)}">`).join("")}</datalist>
+  <label>Durum</label><select id="f_st">${ST.map((s,i)=>`<option value="${i}" ${(r.st??0)==i?"selected":""}>${s}</option>`).join("")}</select>
+  <div class="row" style="margin-top:16px;flex-wrap:wrap"><button class="btn p" data-save-r="${id||""}">Kaydet</button>
+  ${id&&r.st<3?`<button class="btn" data-deliver="${id}">Teslim et ve tahsil et</button>`:""}
+  ${id&&r.phone?`<a class="btn" href="tel:${esc(r.phone)}">Ara</a>`:""}
+  ${id?`<button class="btn d" data-del-r="${id}">Sil</button>`:""}<button class="btn" data-close>Kapat</button></div>`);
+}
+function txForm(id){
+  const t=db.tx.find(x=>x.id==id)||{type:"in",date:today()};
+  sheet(`<h1>${id?"Kaydı düzenle":"Yeni kayıt"}</h1>
+  <div class="tabs"><button class="${t.type=="in"?"on":""}" data-tt="in">Gelir</button><button class="${t.type=="out"?"on":""}" data-tt="out">Gider</button></div>
+  <input type="hidden" id="f_type" value="${t.type}">
+  <label>Tutar (₺)</label><input id="f_amt" type="number" inputmode="decimal" value="${t.amt??""}">
+  <label>Kategori</label><select id="f_cat">${catOpts(t.type,t.cat)}</select>
+  <label>Tarih</label><input id="f_date" type="date" value="${t.date}">
+  <label>Not</label><input id="f_note" value="${esc(t.note)}">
+  <div class="row" style="margin-top:16px"><button class="btn p" data-save-t="${id||""}">Kaydet</button>${id?`<button class="btn d" data-del-t="${id}">Sil</button>`:""}<button class="btn" data-close>Kapat</button></div>`);
+}
+const catOpts=(type,sel)=>(type=="in"?CAT_IN:CAT_OUT).map(c=>`<option ${c==sel?"selected":""}>${c}</option>`).join("");
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button,a");if(!b)return;const d=b.dataset;
+  if(d.v){view=d.v;render()}
+  else if(d.f!==undefined){flt=d.f=="all"?"all":+d.f;render()}
+  else if(d.m){const [y,m]=month.split("-");month=new Date(y,m-1+ +d.m,1).toISOString().slice(0,7);render()}
+  else if(d.r)repairForm(d.r);
+  else if(d.t)txForm(d.t);
+  else if(b.id=="fab")view=="repairs"?repairForm():txForm();
+  else if(d.themebtn!==undefined)themeSheet();
+  else if(d.themeset)setTheme(d.themeset);
+  else if(d.egov!==undefined)copyImei();
+  else if(d.scan!==undefined)startScan();
+  else if(d.stopscan!==undefined)stopScan();
+  else if(d.close!==undefined)closeSheet();
+  else if(d.tt){$("#f_type").value=d.tt;b.parentNode.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x==b));$("#f_cat").innerHTML=catOpts(d.tt)}
+  else if(d.saveR!==undefined){
+    if(!val("f_model")){alert("Cihaz modelini yazın.");return}
+    const o={name:val("f_name"),phone:val("f_phone"),model:val("f_model"),issue:val("f_issue"),imei:val("f_imei"),sup:val("f_sup"),price:+val("f_price")||0,cost:+val("f_cost")||0,st:+$("#f_st").value};
+    if(o.imei.length>=8&&o.model){db.tac=db.tac||{};db.tac[o.imei.slice(0,8)]=o.model}
+    if(d.saveR){Object.assign(db.repairs.find(x=>x.id==d.saveR),o)}else db.repairs.push({id:uid(),date:today(),...o});
+    save();closeSheet();render();
+  }
+  else if(d.deliver){
+    const r=db.repairs.find(x=>x.id==d.deliver);
+    r.name=val("f_name");r.sup=val("f_sup");r.model=val("f_model")||r.model;r.price=+val("f_price")||0;r.cost=+val("f_cost")||0;
+    if(!confirm(`${money(r.price)} tahsil edilip kasaya gelir olarak eklensin mi?`))return;
+    r.st=3;if(r.price>0)db.tx.push({id:uid(),type:"in",amt:r.price,cat:"Tamir",date:today(),note:r.model+" - "+r.name,rid:r.id});
+    if(r.cost>0)db.tx.push({id:uid(),type:"out",amt:r.cost,cat:"Parça",date:today(),note:r.model+(r.sup?" - "+r.sup:""),rid:r.id});
+    save();closeSheet();render();
+  }
+  else if(d.delR){if(confirm("Bu cihaz kaydı silinsin mi?")){db.repairs=db.repairs.filter(x=>x.id!=d.delR);save();closeSheet();render()}}
+  else if(d.saveT!==undefined){
+    const amt=+val("f_amt");if(!(amt>0)){alert("Geçerli bir tutar girin.");return}
+    const o={type:val("f_type"),amt,cat:$("#f_cat").value,date:val("f_date")||today(),note:val("f_note")};
+    if(d.saveT){Object.assign(db.tx.find(x=>x.id==d.saveT),o)}else db.tx.push({id:uid(),...o});
+    month=o.date.slice(0,7);save();closeSheet();render();
+  }
+  else if(d.delT){if(confirm("Bu kayıt silinsin mi?")){db.tx=db.tx.filter(x=>x.id!=d.delT);save();closeSheet();render()}}
+});
+let theme="auto";try{theme=localStorage.getItem("tamir-tema")||"auto"}catch(e){}
+function applyTheme(){const r=document.documentElement;theme=="auto"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",theme)}
+const themeLabel=()=>({auto:"Otomatik",light:"Açık",dark:"Koyu"})[theme];
+function themeSheet(){sheet(`<h1>Tema</h1>${[["auto","Otomatik","Telefonun ayarını takip eder"],["dark","Koyu","Her zaman karanlık mod"],["light","Açık","Her zaman aydınlık mod"]].map(([k,t,d])=>`<button class="card item" data-themeset="${k}"><div class="row sp"><span class="b">${t}</span>${theme==k?'<span class="chip s2">Seçili</span>':""}</div><div class="mut">${d}</div></button>`).join("")}<div class="row" style="margin-top:8px"><button class="btn" data-close>Kapat</button></div>`)}
+function setTheme(k){theme=k;try{localStorage.setItem("tamir-tema",theme)}catch(e){}applyTheme();closeSheet();render()}
+applyTheme();
+// ---- IMEI -> marka/model otomatik doldurma ----
+// IMEI'nin ilk 8 hanesi (TAC) cihaz modelini belirtir. Sıra: 1) bu dükkanda daha önce
+// kaydedilen modeller (db.tac), 2) tac/ klasöründeki çevrimdışı veritabanı (~275 bin TAC).
+const TAC_SRC=["tac/","https://cdn.jsdelivr.net/gh/ulgen00/Tamir-takip@main/tac/"];
+let tacIdx=null,tacBase=null,autoModel="";const tacShards={};
+async function tacIndex(){
+  if(tacIdx)return tacIdx;
+  for(const b of TAC_SRC){try{const r=await fetch(b+"index.json");if(r.ok){const j=await r.json();tacBase=b;return tacIdx={...j,s:new Set(j.s)}}}catch(e){}}
+  return null;
+}
+async function tacLookup(tac){
+  const ix=await tacIndex();if(!ix)return undefined; // undefined = veritabanına ulaşılamadı
+  const p=tac.slice(0,ix.p);if(!ix.s.has(p))return null;
+  if(!tacShards[p]){try{const r=await fetch(tacBase+p+".json");if(!r.ok)return undefined;tacShards[p]=await r.json()}catch(e){return undefined}}
+  const sh=tacShards[p],i=sh.t[tac.slice(ix.p)];return i==null?null:sh.m[i];
+}
+const UPW={LG:1,HTC:1,ZTE:1,TCL:1,HMD:1,OPPO:1,BLU:1,POCO:1,SE:1,XR:1,XS:1,FE:1,GT:1,TV:1,"5G":1,"4G":1,LTE:1,"II":1,"III":1};
+const SPW={IPHONE:"iPhone",IPAD:"iPad",IPOD:"iPod",IQOO:"iQOO",ONEPLUS:"OnePlus",REALME:"realme",VIVO:"vivo",HONOR:"HONOR"};
+function prettyModel(spec){
+  return spec.split(",")[0].trim().split(/\s+/).map(w=>{const u=w.toUpperCase();
+    if(SPW[u])return SPW[u];if(UPW[u]||/\d/.test(w))return u;return u.charAt(0)+u.slice(1).toLowerCase()}).join(" ");
+}
+async function fillTac(c){
+  const tac=c.slice(0,8),msg=$("#imeiMsg"),f=$("#f_model");if(!msg||!f)return;
+  const canFill=()=>{const v=f.value.trim();return !v||v==autoModel};
+  const learned=db.tac&&db.tac[tac];
+  let m=learned,spec="";
+  if(!m){
+    if(canFill())msg.textContent="IMEI’den marka/model aranıyor…";
+    spec=await tacLookup(tac);
+    if($("#f_imei")?.value.replace(/\D/g,"").slice(0,8)!==tac)return; // bu arada IMEI değişti
+    if(spec===undefined){msg.textContent="Model veritabanına ulaşılamadı (internet bağlantısını kontrol edin). Marka/modeli elle yazın.";return}
+    if(spec===null){if(autoModel&&f.value.trim()==autoModel){f.value="";autoModel=""}msg.textContent="Bu IMEI veritabanında bulunamadı. e-Devlet’ten sorgulayıp marka/modeli elle yazın; bir sonraki sefer otomatik dolar.";return}
+    m=prettyModel(spec);
+  }
+  const ok=c.length<15||luhn(c);
+  if(canFill()){f.value=m;autoModel=m;msg.textContent="Marka/model otomatik dolduruldu: "+m+(spec?" ("+spec+")":" (önceki kayıtlarınızdan)")+"."}
+  else msg.textContent="Bu IMEI için bulunan model: "+m+(spec?" ("+spec+")":"")+". Alan dolu olduğu için değiştirilmedi.";
+  if(!ok)msg.textContent+=" Uyarı: IMEI doğrulama hanesi uyuşmuyor, kontrol edin.";
+}
+function copyImei(){const v=$("#f_imei").value.replace(/\D/g,"");if(v.length>=8){try{navigator.clipboard.writeText(v)}catch(e){}$("#imeiMsg").textContent="IMEI kopyalandı. Açılan sayfaya yapıştırın, sonra marka/modeli buraya yazın."}}
+let lastTac="";
+document.addEventListener("input",e=>{if(e.target.id=="f_imei"){const v=e.target.value.replace(/\D/g,"");
+  if(v.length>=8&&(v.slice(0,8)!=lastTac||v.length==15)){lastTac=v.slice(0,8);fillTac(v)}else if(v.length<8)lastTac=""}});
+let stream=null,scanTimer=null;
+const luhn=s=>{let t=0;for(let i=0;i<15;i++){let n=+s[14-i];if(i%2){n*=2;if(n>9)n-=9}t+=n}return t%10==0};
+function setImei(v){
+  const m=String(v).match(/\d{15}/g)||[];const c=m.find(luhn)||m[0];if(!c)return false;
+  $("#f_imei").value=c;$("#imeiMsg").textContent=luhn(c)?"IMEI okundu.":"IMEI okundu ancak doğrulama hanesi uyuşmuyor, lütfen kontrol edin.";lastTac=c.slice(0,8);fillTac(c);return true;
+}
+const mkDet=()=>new BarcodeDetector({formats:["code_128","code_39","ean_13","itf","qr_code","data_matrix"]});
+async function startScan(){
+  const msg=$("#imeiMsg");
+  if(!window.BarcodeDetector){msg.textContent="Bu tarayıcı barkod okumayı desteklemiyor. IMEI’yi elle yazın.";return}
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})}
+  catch(e){msg.textContent="Kamera açılamadı. Etiketin fotoğrafını çekerek deneyin.";photoScan();return}
+  const det=mkDet(),o=document.createElement("div");o.className="scan";o.id="scan";
+  o.innerHTML='<video playsinline muted></video><div class="scanhint">Barkodu çerçeveye getirin</div><button class="btn" data-stopscan>Kapat</button>';
+  document.body.appendChild(o);const v=o.querySelector("video");v.srcObject=stream;await v.play();
+  scanTimer=setInterval(async()=>{try{for(const x of await det.detect(v)){if(setImei(x.rawValue)){stopScan();return}}}catch(e){}},300);
+}
+function stopScan(){clearInterval(scanTimer);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;const o=$("#scan");if(o)o.remove()}
+function photoScan(){
+  const i=document.createElement("input");i.type="file";i.accept="image/*";i.capture="environment";
+  i.onchange=async()=>{const f=i.files[0];if(!f)return;try{const r=await mkDet().detect(await createImageBitmap(f));
+    if(!r.some(x=>setImei(x.rawValue)))$("#imeiMsg").textContent="Barkod okunamadı. Daha yakından çekin veya IMEI’yi elle yazın."}
+    catch(e){$("#imeiMsg").textContent="Fotoğraf okunamadı. IMEI’yi elle yazın."}};
+  i.click();
+}
+render();
+</script>
+</body>
+</html>
