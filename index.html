@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tamir Defteri</title>
 <style>
-:root{--bg:#EDEFEA;--surf:#FAFAF7;--ink:#1B2A2F;--mut:#5E6E72;--line:#D5DAD3;--acc:#0E5A6B;--accink:#fff;--in:#1E7A4C;--out:#B23A2E;
---c0:#8A5600;--b0:#F6E7C8;--c1:#0E5A6B;--b1:#D4E8EC;--c2:#1E7A4C;--b2:#D3EBDD;--c3:#5E6E72;--b3:#E2E5E0;
+:root{--bg:#F3EBDD;--surf:#FBF6EC;--ink:#3B2A1E;--mut:#7A6555;--line:#E0D3BF;--acc:#7A4A2A;--accink:#FFF8EE;--in:#3F7A3A;--out:#A8392B;
+--c0:#8A5A00;--b0:#F4E2C0;--c1:#7A4A2A;--b1:#EBDCC8;--c2:#3F7A3A;--b2:#DDEBD3;--c3:#7A6555;--b3:#E8DFD2;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12191B;--surf:#1B2528;--ink:#E6ECEA;--mut:#93A3A6;--line:#2B383B;--acc:#5DB7C9;--accink:#08171B;--in:#5FCB93;--out:#F08A7E;
---c0:#F0C36B;--b0:#3A2F14;--c1:#8CD0DE;--b1:#16353C;--c2:#7FDDAA;--b2:#173826;--c3:#93A3A6;--b3:#273134;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#12191B;--surf:#1B2528;--ink:#E6ECEA;--mut:#93A3A6;--line:#2B383B;--acc:#5DB7C9;--accink:#08171B;--in:#5FCB93;--out:#F08A7E;
---c0:#F0C36B;--b0:#3A2F14;--c1:#8CD0DE;--b1:#16353C;--c2:#7FDDAA;--b2:#173826;--c3:#93A3A6;--b3:#273134;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1E1712;--surf:#2A211A;--ink:#F1E6D6;--mut:#B5A28E;--line:#3D3127;--acc:#D9A877;--accink:#24180E;--in:#8FCB86;--out:#F09080;
+--c0:#F0C36B;--b0:#3A2C12;--c1:#D9A877;--b1:#3D2C1C;--c2:#8FCB86;--b2:#22351F;--c3:#B5A28E;--b3:#332A22;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1E1712;--surf:#2A211A;--ink:#F1E6D6;--mut:#B5A28E;--line:#3D3127;--acc:#D9A877;--accink:#24180E;--in:#8FCB86;--out:#F09080;
+--c0:#F0C36B;--b0:#3A2C12;--c1:#D9A877;--b1:#3D2C1C;--c2:#8FCB86;--b2:#22351F;--c3:#B5A28E;--b3:#332A22;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 "Times New Roman",Times,"Liberation Serif",serif}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -46,9 +46,11 @@ input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--
 .scan video{width:100%;max-height:65%;object-fit:cover;border-radius:12px}
 .scanhint{color:#fff;text-align:center}
 a{color:var(--acc)}
+.brand{max-width:640px;margin:0 auto;padding:14px 14px 0;font-weight:700;font-size:23px;letter-spacing:.3px;color:var(--acc)}
 </style>
 </head>
 <body>
+<header class="brand">Cep Atölyesi</header>
 <main id="app"></main>
 <button class="fab" id="fab" aria-label="Yeni kayıt ekle">+</button>
 <nav id="nav"></nav>
@@ -64,6 +66,12 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const money=n=>(Number(n)||0).toLocaleString("tr-TR",{maximumFractionDigits:2})+" ₺";
 const dfmt=d=>d?d.split("-").reverse().join("."):"";
 const $=s=>document.querySelector(s);
+// Sayfa içi onay kutusu (tarayıcının confirm/alert pencereleri bazı ortamlarda çalışmıyor)
+function ask(msg,only){return new Promise(res=>{const d=document.createElement("div");d.className="sheetbg";d.style.zIndex=40;d.style.alignItems="center";
+  d.innerHTML=`<div class="sheet" role="alertdialog" aria-modal="true" style="border-radius:16px;margin:16px"><p style="margin-top:0">${esc(msg)}</p><div class="row"><button class="btn p" data-ok>${only?"Tamam":"Evet"}</button>${only?"":'<button class="btn" data-no>Vazgeç</button>'}</div></div>`;
+  d.querySelector("[data-ok]").onclick=e=>{e.stopPropagation();d.remove();res(true)};const n=d.querySelector("[data-no]");if(n)n.onclick=e=>{e.stopPropagation();d.remove();res(false)};
+  document.body.appendChild(d);d.querySelector("[data-ok]").focus()})}
+const say=m=>ask(m,true);
 
 function render(){
   $("#nav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}">${t}</button>`).join("")+`<button data-themebtn aria-label="Tema değiştir">Tema: ${themeLabel()}</button>`;
@@ -138,7 +146,7 @@ function txForm(id){
 }
 const catOpts=(type,sel)=>(type=="in"?CAT_IN:CAT_OUT).map(c=>`<option ${c==sel?"selected":""}>${c}</option>`).join("");
 
-document.addEventListener("click",e=>{
+document.addEventListener("click",async e=>{
   const b=e.target.closest("button,a");if(!b)return;const d=b.dataset;
   if(d.v){view=d.v;render()}
   else if(d.f!==undefined){flt=d.f=="all"?"all":+d.f;render()}
@@ -154,7 +162,7 @@ document.addEventListener("click",e=>{
   else if(d.close!==undefined)closeSheet();
   else if(d.tt){$("#f_type").value=d.tt;b.parentNode.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x==b));$("#f_cat").innerHTML=catOpts(d.tt)}
   else if(d.saveR!==undefined){
-    if(!val("f_model")){alert("Cihaz modelini yazın.");return}
+    if(!val("f_model")){await say("Cihaz modelini yazın.");return}
     const o={name:val("f_name"),phone:val("f_phone"),model:val("f_model"),issue:val("f_issue"),imei:val("f_imei"),sup:val("f_sup"),price:+val("f_price")||0,cost:+val("f_cost")||0,st:+$("#f_st").value};
     if(o.imei.length>=8&&o.model){db.tac=db.tac||{};db.tac[o.imei.slice(0,8)]=o.model}
     if(d.saveR){Object.assign(db.repairs.find(x=>x.id==d.saveR),o)}else db.repairs.push({id:uid(),date:today(),...o});
@@ -163,19 +171,19 @@ document.addEventListener("click",e=>{
   else if(d.deliver){
     const r=db.repairs.find(x=>x.id==d.deliver);
     r.name=val("f_name");r.sup=val("f_sup");r.model=val("f_model")||r.model;r.price=+val("f_price")||0;r.cost=+val("f_cost")||0;
-    if(!confirm(`${money(r.price)} tahsil edilip kasaya gelir olarak eklensin mi?`))return;
+    if(!await ask(`${money(r.price)} tahsil edilip kasaya gelir olarak eklensin mi?`))return;
     r.st=3;if(r.price>0)db.tx.push({id:uid(),type:"in",amt:r.price,cat:"Tamir",date:today(),note:r.model+" - "+r.name,rid:r.id});
     if(r.cost>0)db.tx.push({id:uid(),type:"out",amt:r.cost,cat:"Parça",date:today(),note:r.model+(r.sup?" - "+r.sup:""),rid:r.id});
     save();closeSheet();render();
   }
-  else if(d.delR){if(confirm("Bu cihaz kaydı silinsin mi?")){db.repairs=db.repairs.filter(x=>x.id!=d.delR);save();closeSheet();render()}}
+  else if(d.delR){if(await ask("Bu cihaz kaydı silinsin mi?")){db.repairs=db.repairs.filter(x=>x.id!=d.delR);save();closeSheet();render()}}
   else if(d.saveT!==undefined){
-    const amt=+val("f_amt");if(!(amt>0)){alert("Geçerli bir tutar girin.");return}
+    const amt=+val("f_amt");if(!(amt>0)){await say("Geçerli bir tutar girin.");return}
     const o={type:val("f_type"),amt,cat:$("#f_cat").value,date:val("f_date")||today(),note:val("f_note")};
     if(d.saveT){Object.assign(db.tx.find(x=>x.id==d.saveT),o)}else db.tx.push({id:uid(),...o});
     month=o.date.slice(0,7);save();closeSheet();render();
   }
-  else if(d.delT){if(confirm("Bu kayıt silinsin mi?")){db.tx=db.tx.filter(x=>x.id!=d.delT);save();closeSheet();render()}}
+  else if(d.delT){if(await ask("Bu kayıt silinsin mi?")){db.tx=db.tx.filter(x=>x.id!=d.delT);save();closeSheet();render()}}
 });
 let theme="auto";try{theme=localStorage.getItem("tamir-tema")||"auto"}catch(e){}
 function applyTheme(){const r=document.documentElement;theme=="auto"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",theme)}
@@ -202,7 +210,10 @@ async function tacLookup(tac){
 const UPW={LG:1,HTC:1,ZTE:1,TCL:1,HMD:1,OPPO:1,BLU:1,POCO:1,SE:1,XR:1,XS:1,FE:1,GT:1,TV:1,"5G":1,"4G":1,LTE:1,"II":1,"III":1};
 const SPW={IPHONE:"iPhone",IPAD:"iPad",IPOD:"iPod",IQOO:"iQOO",ONEPLUS:"OnePlus",REALME:"realme",VIVO:"vivo",HONOR:"HONOR"};
 function prettyModel(spec){
-  return spec.split(",")[0].trim().split(/\s+/).map(w=>{const u=w.toUpperCase();
+  // Kayıtlar "MARKA MODEL, ..." ya da "MARKA, MARKA MODEL" biçiminde: ilk parça tek kelimeyse (sadece marka) modeli sonraki parçadan al
+  const p=spec.split(",").map(s=>s.trim()).filter(s=>s&&s!="N/A");let n=p[0]||spec.trim();
+  if(n.split(/\s+/).length<2&&p[1]&&!/^\d{4}$/.test(p[1]))n=p[1].toUpperCase().startsWith(n.toUpperCase())?p[1]:n+" "+p[1];
+  return n.split(/\s+/).map(w=>{const u=w.toUpperCase();
     if(SPW[u])return SPW[u];if(UPW[u]||/\d/.test(w))return u;return u.charAt(0)+u.slice(1).toLowerCase()}).join(" ");
 }
 async function fillTac(c){
