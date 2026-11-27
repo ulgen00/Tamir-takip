@@ -210,7 +210,10 @@ async function tacLookup(tac){
 const UPW={LG:1,HTC:1,ZTE:1,TCL:1,HMD:1,OPPO:1,BLU:1,POCO:1,SE:1,XR:1,XS:1,FE:1,GT:1,TV:1,"5G":1,"4G":1,LTE:1,"II":1,"III":1};
 const SPW={IPHONE:"iPhone",IPAD:"iPad",IPOD:"iPod",IQOO:"iQOO",ONEPLUS:"OnePlus",REALME:"realme",VIVO:"vivo",HONOR:"HONOR"};
 function prettyModel(spec){
-  return spec.split(",")[0].trim().split(/\s+/).map(w=>{const u=w.toUpperCase();
+  // Kayıtlar "MARKA MODEL, ..." ya da "MARKA, MARKA MODEL" biçiminde: ilk parça tek kelimeyse (sadece marka) modeli sonraki parçadan al
+  const p=spec.split(",").map(s=>s.trim()).filter(s=>s&&s!="N/A");let n=p[0]||spec.trim();
+  if(n.split(/\s+/).length<2&&p[1]&&!/^\d{4}$/.test(p[1]))n=p[1].toUpperCase().startsWith(n.toUpperCase())?p[1]:n+" "+p[1];
+  return n.split(/\s+/).map(w=>{const u=w.toUpperCase();
     if(SPW[u])return SPW[u];if(UPW[u]||/\d/.test(w))return u;return u.charAt(0)+u.slice(1).toLowerCase()}).join(" ");
 }
 async function fillTac(c){
