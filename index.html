@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tamir Defteri</title>
 <style>
-:root{--bg:#EDEFEA;--surf:#FAFAF7;--ink:#1B2A2F;--mut:#5E6E72;--line:#D5DAD3;--acc:#0E5A6B;--accink:#fff;--in:#1E7A4C;--out:#B23A2E;
---c0:#8A5600;--b0:#F6E7C8;--c1:#0E5A6B;--b1:#D4E8EC;--c2:#1E7A4C;--b2:#D3EBDD;--c3:#5E6E72;--b3:#E2E5E0;
+:root{--bg:#F3EBDD;--surf:#FBF6EC;--ink:#3B2A1E;--mut:#7A6555;--line:#E0D3BF;--acc:#7A4A2A;--accink:#FFF8EE;--in:#3F7A3A;--out:#A8392B;
+--c0:#8A5A00;--b0:#F4E2C0;--c1:#7A4A2A;--b1:#EBDCC8;--c2:#3F7A3A;--b2:#DDEBD3;--c3:#7A6555;--b3:#E8DFD2;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12191B;--surf:#1B2528;--ink:#E6ECEA;--mut:#93A3A6;--line:#2B383B;--acc:#5DB7C9;--accink:#08171B;--in:#5FCB93;--out:#F08A7E;
---c0:#F0C36B;--b0:#3A2F14;--c1:#8CD0DE;--b1:#16353C;--c2:#7FDDAA;--b2:#173826;--c3:#93A3A6;--b3:#273134;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#12191B;--surf:#1B2528;--ink:#E6ECEA;--mut:#93A3A6;--line:#2B383B;--acc:#5DB7C9;--accink:#08171B;--in:#5FCB93;--out:#F08A7E;
---c0:#F0C36B;--b0:#3A2F14;--c1:#8CD0DE;--b1:#16353C;--c2:#7FDDAA;--b2:#173826;--c3:#93A3A6;--b3:#273134;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1E1712;--surf:#2A211A;--ink:#F1E6D6;--mut:#B5A28E;--line:#3D3127;--acc:#D9A877;--accink:#24180E;--in:#8FCB86;--out:#F09080;
+--c0:#F0C36B;--b0:#3A2C12;--c1:#D9A877;--b1:#3D2C1C;--c2:#8FCB86;--b2:#22351F;--c3:#B5A28E;--b3:#332A22;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1E1712;--surf:#2A211A;--ink:#F1E6D6;--mut:#B5A28E;--line:#3D3127;--acc:#D9A877;--accink:#24180E;--in:#8FCB86;--out:#F09080;
+--c0:#F0C36B;--b0:#3A2C12;--c1:#D9A877;--b1:#3D2C1C;--c2:#8FCB86;--b2:#22351F;--c3:#B5A28E;--b3:#332A22;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 "Times New Roman",Times,"Liberation Serif",serif}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -46,9 +46,11 @@ input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--
 .scan video{width:100%;max-height:65%;object-fit:cover;border-radius:12px}
 .scanhint{color:#fff;text-align:center}
 a{color:var(--acc)}
+.brand{max-width:640px;margin:0 auto;padding:12px 14px 0;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--acc)}
 </style>
 </head>
 <body>
+<header class="brand">Cep Atölyesi</header>
 <main id="app"></main>
 <button class="fab" id="fab" aria-label="Yeni kayıt ekle">+</button>
 <nav id="nav"></nav>
