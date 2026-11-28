@@ -1,0 +1,9 @@
+{
+  "name": "Fenerin Işığı",
+  "short_name": "Fener",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020"
+}

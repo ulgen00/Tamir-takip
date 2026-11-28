@@ -83,3 +83,10 @@ IMEI'den model, teslim, kasa, sekmeler, tema ve gerçek bir e-Devlet sorgusu.
 İmza: `android/keystore.properties` dosyası (depoya eklenmez) `storeFile`, `storePassword`, `keyAlias`,
 `keyPassword` içerir. Dosya yoksa APK hata ayıklama anahtarıyla imzalanır. Güncellemelerin telefona
 kurulabilmesi için hep aynı anahtar kullanılmalı. Simgeler `python3 tools/make_icons.py` ile üretilir.
+
+## Oyun: Fenerin Işığı
+
+`oyun/index.html` — yatay ekranda oynanan, hikâye tabanlı 2D platform oyunu (tek dosya, kurulum gerektirmez).
+Elif, fırtınada kırılan fenerin üç mercek parçasını üç bölümde (Liman Köyü, Fısıltı Ormanı, Fırtına Yamaçları)
+toplayıp feneri yeniden yakmaya çalışır. Klavye (← → / Boşluk / E / Esc) ve dokunmatik kontrolleri destekler;
+ilerleme tarayıcıda bölüm başında kaydedilir.
