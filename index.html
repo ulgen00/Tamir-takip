@@ -153,7 +153,7 @@ const IMEI_HINT="IMEI’yi yazın, yapıştırın ya da barkodunu tarayın. Tele
 function vImei(){
   return `<h1>IMEI sorgulama</h1><div class="card">
   <label for="f_imei" style="margin-top:0">IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" placeholder="15 haneli IMEI">
-  <div class="row" style="margin-top:8px"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button></div>
+  <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button><button class="btn" type="button" data-gallery>Galeriden seç</button></div>
   <div class="mut" id="imeiMsg" style="margin-top:8px">${IMEI_HINT}</div><div id="edv" aria-live="polite"></div></div>`;
 }
 function vCash(){
@@ -212,7 +212,7 @@ function repairForm(id){
   <label for="f_name">Müşteri adı <span class="req">*</span></label><input id="f_name" required autocomplete="off" value="${esc(r.name)}">
   <label for="f_phone">Telefon numarası <span class="req">*</span></label><input id="f_phone" required type="tel" inputmode="tel" value="${esc(fmtPhone(r.phone))}" placeholder="0532 123 45 67">
   <label for="f_model">Cihaz (marka / model) <span class="req">*</span></label><input id="f_model" required value="${esc(r.model)}" placeholder="Örn. Samsung A54">
-  <label>IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><div class="row" style="margin-top:8px"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
+  <label>IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button><button class="btn" type="button" data-gallery>Galeriden seç</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
   <label>Arıza / yapılacak iş</label><textarea id="f_issue" rows="2">${esc(r.issue)}</textarea>
   <div class="g2"><div><label>Ücret (₺)</label><input id="f_price" type="number" inputmode="decimal" value="${r.price??""}"></div><div><label>Parça maliyeti (₺)</label><input id="f_cost" type="number" inputmode="decimal" value="${r.cost??""}"></div></div>
   <label>Parçanın alındığı toptancı</label><input id="f_sup" list="suplist" value="${esc(r.sup)}" placeholder="Örn. Ahmet Telekom"><datalist id="suplist">${[...new Set(db.repairs.map(x=>x.sup).filter(Boolean))].map(s=>`<option value="${esc(s)}">`).join("")}</datalist>
@@ -249,6 +249,7 @@ document.addEventListener("click",async e=>{
   else if(d.navset)setNav(d.navset);
   else if(d.pasteimei!==undefined)pasteImei();
   else if(d.scan!==undefined)startScan();
+  else if(d.gallery!==undefined)photoScan(true);
   else if(d.stopscan!==undefined)stopScan();
   else if(d.edvq!==undefined)edvQuery();
   else if(d.edvsend!==undefined)edvSend();
@@ -463,16 +464,47 @@ async function makeDetector(){
   hints.set(Z.DecodeHintType.POSSIBLE_FORMATS,[B.CODE_128,B.CODE_39,B.EAN_13,B.ITF,B.QR_CODE,B.DATA_MATRIX]);hints.set(Z.DecodeHintType.TRY_HARDER,true);
   const reader=new Z.MultiFormatReader();reader.setHints(hints);
   const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});
+  const cv2=document.createElement("canvas"),cx2=cv2.getContext("2d",{willReadFrequently:true});
+  // ZXing'in tuval kaynağı kırpmayı desteklemiyor: şeridi ayrı bir tuvale çizip oradan oku
+  const part=(x,y,w,h)=>{cv2.width=w;cv2.height=h;cx2.drawImage(cv,x,y,w,h,0,0,w,h);return new Z.HTMLCanvasElementLuminanceSource(cv2)};
   const dec=src=>{try{return reader.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(src))).getText()}catch(e){return null}};
-  return {detect:async img=>{
+  const isImei=t=>t&&/\d{15}/.test(t);
+  // Görüntüyü en fazla max piksele küçültüp önce tamamını, sonra şeritlerini dener (etikette seri no, IMEI1, IMEI2 olabilir)
+  const scan=async(img,max,strips,up=1)=>{ // up: küçük görüntüyü en fazla bu kadar büyüt (ince çizgiler için)
     const w=img.videoWidth||img.width,h=img.videoHeight||img.height;if(!w||!h)return [];
-    const k=Math.min(1,1280/Math.max(w,h));cv.width=Math.round(w*k);cv.height=Math.round(h*k);cx.drawImage(img,0,0,cv.width,cv.height);
-    const lum=new Z.HTMLCanvasElementLuminanceSource(cv),out=[],t=dec(lum);if(t)out.push(t);
-    // Etikette birden çok barkod varsa (IMEI1, IMEI2, seri no) görüntüyü yatay şeritlere bölüp tek tek dene
-    if(!(t&&/\d{15}/.test(t))){const W=cv.width,H=cv.height,bh=Math.round(H/2);
-      for(const y of [0,Math.round(H/4),H-bh]){const r=dec(lum.crop(0,y,W,bh));if(r&&!out.includes(r))out.push(r);if(r&&/\d{15}/.test(r))break}}
-    return out.map(rawValue=>({rawValue}));
-  }};
+    const k=Math.min(up,max/Math.max(w,h));cv.width=Math.round(w*k);cv.height=Math.round(h*k);cx.drawImage(img,0,0,cv.width,cv.height);
+    return scanCanvas(strips);
+  };
+  // Tuvaldeki görüntünün tamamını, IMEI çıkmazsa şeritlerini dener
+  const scanCanvas=async strips=>{
+    const out=[],lum=new Z.HTMLCanvasElementLuminanceSource(cv),W=cv.width,H=cv.height,add=r=>{if(r&&!out.includes(r))out.push(r);return isImei(r)};
+    if(add(dec(lum)))return out;
+    for(const [n,dir] of strips){ // n şerit, yarısı kadar kaydırarak; dir: "y" yatay şerit, "x" dikey şerit (yan çekilmiş etiket)
+      const L=dir=="y"?H:W,sz=Math.round(L*2/(n+1)),step=Math.round(L/(n+1));
+      for(let i=0;i<n;i++){const p=Math.min(i*step,L-sz);if(add(dec(dir=="y"?part(0,p,W,sz):part(p,0,sz,H))))return out;if(strips.length>1)await new Promise(r=>setTimeout(r))}
+    }
+    return out;
+  };
+  return {
+    detect:async img=>(await scan(img,1280,[[3,"y"]])).map(rawValue=>({rawValue})), // kamera: hızlı
+    detectStill:async img=>{ // galeri/fotoğraf: önce bütün fotoğraf, sonra tam çözünürlükte örtüşen parçalar
+      const all=[],keep=rs=>{for(const r of rs)if(!all.includes(r))all.push(r);return all.some(isImei)},done=()=>all.map(rawValue=>({rawValue}));
+      if(keep(await scan(img,1600,[[5,"y"]])))return done();
+      const w=img.width,h=img.height;
+      // Büyük fotoğrafta daha az küçülterek tekrar dene; küçük (ör. kırpılmış) fotoğrafı farklı oranlarda büyüterek dene
+      // (ince barkod çizgileri bazı oranlarda okunamıyor, bu yüzden birkaç oran)
+      if(Math.max(w,h)>2400){if(keep(await scan(img,2400,[[5,"y"]])))return done()}
+      else for(const up of [1.5,2,1.25])if(keep(await scan(img,4800,[[5,"y"]],up)))return done();
+      // Etiket fotoğrafta küçükse: 3x3 örtüşen parça (her biri fotoğrafın %60'ı), küçültmeden (en fazla 2600 piksel)
+      if(Math.max(w,h)>2400)for(const fy of [0,.2,.4])for(const fx of [0,.2,.4]){
+        const tw=Math.round(w*.6),th=Math.round(h*.6),k=Math.min(1,2600/Math.max(tw,th));
+        cv.width=Math.round(tw*k);cv.height=Math.round(th*k);cx.drawImage(img,Math.round(w*fx),Math.round(h*fy),tw,th,0,0,cv.width,cv.height);
+        if(keep([dec(new Z.HTMLCanvasElementLuminanceSource(cv))].filter(Boolean)))return done();
+        await new Promise(r=>setTimeout(r));
+      }
+      return done();
+    }
+  };
 }
 const getDetector=()=>detP||(detP=makeDetector().catch(e=>{detP=null;throw e}));
 const NO_READER="Barkod okuyucu yüklenemedi (internet bağlantısını kontrol edin). IMEI’yi elle yazın.";
@@ -490,12 +522,15 @@ async function startScan(){
   scanTimer=setInterval(async()=>{if(busy)return;busy=true;try{for(const x of await det.detect(v)){if(setImei(x.rawValue)){stopScan();return}}}catch(e){}finally{busy=false}},250);
 }
 function stopScan(){clearInterval(scanTimer);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;const o=$("#scan");if(o)o.remove()}
-function photoScan(){
-  const i=document.createElement("input");i.type="file";i.accept="image/*";i.capture="environment";
-  i.onchange=async()=>{const f=i.files[0];if(!f)return;let det;try{det=await getDetector()}catch(e){$("#imeiMsg").textContent=NO_READER;return}
-    try{const r=await det.detect(await createImageBitmap(f));
-    if(!r.some(x=>setImei(x.rawValue)))$("#imeiMsg").textContent="Barkod okunamadı. Daha yakından çekin veya IMEI’yi elle yazın."}
-    catch(e){$("#imeiMsg").textContent="Fotoğraf okunamadı. IMEI’yi elle yazın."}};
+// Fotoğraftan barkod okuma. gallery=true: galeriden seçilir; değilse kamera ile çekilir.
+function photoScan(gallery){
+  const i=document.createElement("input");i.type="file";i.accept="image/*";if(!gallery)i.capture="environment";
+  i.onchange=async()=>{const f=i.files[0],msg=$("#imeiMsg");if(!f||!msg)return;
+    msg.textContent="Fotoğraftaki barkod okunuyor…";
+    let det;try{det=await getDetector()}catch(e){msg.textContent=NO_READER;return}
+    try{const bmp=await createImageBitmap(f),r=await (det.detectStill||det.detect).call(det,bmp);
+      if(!r.some(x=>setImei(x.rawValue)))msg.textContent=(r.length?"Fotoğrafta IMEI barkodu okunamadı.":"Fotoğrafta barkod bulunamadı.")+" Barkodu daha yakından ve net çekip tekrar deneyin; fotoğrafı barkodun etrafından kırpmak da işe yarayabilir. Olmazsa IMEI’yi elle yazın."}
+    catch(e){msg.textContent="Fotoğraf açılamadı. Başka bir fotoğraf seçin ya da IMEI’yi elle yazın."}};
   i.click();
 }
 applyNav();render();
