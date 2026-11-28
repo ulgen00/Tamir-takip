@@ -33,6 +33,23 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+/* Alt çubuk (Ayarlar'dan seçilirse) */
+nav.bbar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surf);border-top:1px solid var(--line);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+nav.bbar button{flex:1;min-width:0;font:inherit;font-size:13px;background:none;border:0;color:var(--mut);padding:10px 2px;min-height:54px;cursor:pointer;transition:color .25s}
+nav.bbar button.on{color:var(--acc);font-weight:700}
+.bind{position:absolute;top:0;left:env(safe-area-inset-left,0px);height:3px;border-radius:0 0 3px 3px;background:var(--acc);transition:transform .32s cubic-bezier(.22,.9,.3,1)}
+@media (prefers-reduced-motion:reduce){.bind{transition:none}}
+body.nav-bottom nav.bbar{display:flex}
+body.nav-bottom .menubtn{display:none}
+body.nav-bottom .fab{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+body.nav-bottom main{padding-bottom:150px}
+/* Onay/uyarı kutusu: ekranın ortasında */
+.askbox{background:var(--bg);width:min(340px,calc(100% - 32px));max-height:80%;overflow:auto;margin:auto;border-radius:18px;padding:22px 18px 18px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,.35);animation:popIn .2s ease}
+.askbox p{margin:0 0 18px;font-size:18px;line-height:1.35}
+.askbox .row{justify-content:center}
+.askbox .btn{min-width:110px}
+@keyframes popIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.askbox{animation:none}}
 /* Ekran açılırken alttan yukarı yumuşak geliş */
 @keyframes sheetIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -75,6 +92,7 @@ display:flex;flex-direction:column;gap:4px;transform:translateX(-100%);visibilit
 <header class="top"><button class="menubtn" id="menuBtn" data-menu aria-label="Seçenekler" aria-expanded="false" aria-controls="drawer"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button><span class="brand">Cep Atölyesi</span><div class="themesw" role="group" aria-label="Tema"><button data-themeset="light" aria-label="Açık tema" title="Açık tema"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button data-themeset="dark" aria-label="Koyu tema" title="Koyu tema"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z" fill="currentColor"/></svg></button></div></header>
 <main id="app"></main>
 <button class="fab" id="fab" aria-label="Yeni kayıt ekle">+</button>
+<nav class="bbar" id="bbar" aria-label="Sekmeler"></nav>
 <div class="drawerbg" id="drawerbg"></div>
 <aside class="drawer" id="drawer" aria-label="Seçenekler" aria-hidden="true"><div class="dhead"><span>Seçenekler</span><button data-menuclose aria-label="Menüyü kapat">×</button></div><div id="drawerNav" style="display:flex;flex-direction:column;gap:4px"></div></aside>
 <script>
@@ -91,15 +109,36 @@ const dfmt=d=>d?d.split("-").reverse().join("."):"";
 const $=s=>document.querySelector(s);
 // Sayfa içi onay kutusu (tarayıcının confirm/alert pencereleri bazı ortamlarda çalışmıyor)
 function ask(msg,only){return new Promise(res=>{const d=document.createElement("div");d.className="sheetbg";d.style.zIndex=40;d.style.alignItems="center";
-  d.innerHTML=`<div class="sheet" role="alertdialog" aria-modal="true" style="border-radius:16px;margin:16px"><p style="margin-top:0">${esc(msg)}</p><div class="row"><button class="btn p" data-ok>${only?"Tamam":"Evet"}</button>${only?"":'<button class="btn" data-no>Vazgeç</button>'}</div></div>`;
+  d.innerHTML=`<div class="askbox" role="alertdialog" aria-modal="true"><p>${esc(msg)}</p><div class="row"><button class="btn p" data-ok>${only?"Tamam":"Evet"}</button>${only?"":'<button class="btn" data-no>Vazgeç</button>'}</div></div>`;
   d.querySelector("[data-ok]").onclick=e=>{e.stopPropagation();d.remove();res(true)};const n=d.querySelector("[data-no]");if(n)n.onclick=e=>{e.stopPropagation();d.remove();res(false)};
   document.body.appendChild(d);d.querySelector("[data-ok]").focus()})}
 const say=m=>ask(m,true);
 
 function render(){
-  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"],["imei","IMEI Sorgula"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
-  $("#fab").style.display=view=="sum"||view=="imei"?"none":"block";
-  $("#app").innerHTML=view=="repairs"?vRepairs():view=="imei"?vImei():view=="cash"?vCash():vSum();
+  const tab=(k,t)=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`;
+  $("#drawerNav").innerHTML=NAV.map(([k,t])=>tab(k,t)).join("");
+  // Alt çubuk bir kez kurulur; sekme değişince altındaki çizgi kayarak yeni sekmeye gider
+  const bb=$("#bbar");if(!bb.children.length)bb.innerHTML=NAV.map(([k,t,kisa])=>tab(k,kisa||t)).join("")+`<span class="bind" style="width:calc((100% - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))/${NAV.length})"></span>`;
+  bb.querySelectorAll("[data-v]").forEach(b=>{const on=b.dataset.v==view;b.classList.toggle("on",on);on?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current")});
+  bb.querySelector(".bind").style.transform=`translateX(${Math.max(0,NAV.findIndex(n=>n[0]==view))*100}%)`;
+  $("#fab").style.display=view=="repairs"||view=="cash"?"block":"none";
+  $("#app").innerHTML=view=="repairs"?vRepairs():view=="imei"?vImei():view=="settings"?vSettings():view=="cash"?vCash():vSum();
+}
+const NAV=[["repairs","Tamir"],["cash","Kasa"],["sum","Özet"],["imei","IMEI Sorgula","IMEI"],["settings","Ayarlar"]];
+// Gezinme biçimi: "drawer" (sol üstteki menü) ya da "bottom" (alt çubuk)
+let navMode="drawer";try{navMode=localStorage.getItem("tamir-gezinme")||"drawer"}catch(e){}
+const applyNav=()=>document.body.classList.toggle("nav-bottom",navMode=="bottom");
+function setNav(k){navMode=k;try{localStorage.setItem("tamir-gezinme",k)}catch(e){}applyNav();closeMenu();render()}
+function vSettings(){
+  const opt=(k,t,d)=>`<button class="card item" data-navset="${k}" aria-pressed="${navMode==k}"><div class="row sp"><span class="b">${t}</span>${navMode==k?'<span class="chip s2">Seçili</span>':""}</div><div class="mut">${d}</div></button>`;
+  return `<h1>Ayarlar</h1><div class="b" style="margin:4px 0 8px">Sekmelerin yeri</div>
+  ${opt("drawer","Soldan menü","Sol üstteki ☰ düğmesiyle ya da ekranın sol kenarından sağa kaydırarak açılır.")}
+  ${opt("bottom","Alt çubuk","Sekmeler ekranın altında, her zaman görünür.")}`;
+}
+// Sekme değişince içerik, gidilen yönden kayarak ve belirerek gelir
+function slideIn(dir){
+  if(!dir||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  try{$("#app").animate([{opacity:0,transform:`translateX(${dir*28}px)`},{opacity:1,transform:"none"}],{duration:320,easing:"cubic-bezier(.22,.9,.3,1)"})}catch(e){}
 }
 function vRepairs(){
   const counts=ST.map((_,i)=>db.repairs.filter(r=>r.st==i).length);
@@ -114,7 +153,7 @@ const IMEI_HINT="IMEI’yi yazın, yapıştırın ya da barkodunu tarayın. Tele
 function vImei(){
   return `<h1>IMEI sorgulama</h1><div class="card">
   <label for="f_imei" style="margin-top:0">IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" placeholder="15 haneli IMEI">
-  <div class="row" style="margin-top:8px"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button></div>
+  <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button><button class="btn" type="button" data-gallery>Galeriden seç</button></div>
   <div class="mut" id="imeiMsg" style="margin-top:8px">${IMEI_HINT}</div><div id="edv" aria-live="polite"></div></div>`;
 }
 function vCash(){
@@ -173,7 +212,7 @@ function repairForm(id){
   <label for="f_name">Müşteri adı <span class="req">*</span></label><input id="f_name" required autocomplete="off" value="${esc(r.name)}">
   <label for="f_phone">Telefon numarası <span class="req">*</span></label><input id="f_phone" required type="tel" inputmode="tel" value="${esc(fmtPhone(r.phone))}" placeholder="0532 123 45 67">
   <label for="f_model">Cihaz (marka / model) <span class="req">*</span></label><input id="f_model" required value="${esc(r.model)}" placeholder="Örn. Samsung A54">
-  <label>IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><div class="row" style="margin-top:8px"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
+  <label>IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button><button class="btn" type="button" data-gallery>Galeriden seç</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
   <label>Arıza / yapılacak iş</label><textarea id="f_issue" rows="2">${esc(r.issue)}</textarea>
   <div class="g2"><div><label>Ücret (₺)</label><input id="f_price" type="number" inputmode="decimal" value="${r.price??""}"></div><div><label>Parça maliyeti (₺)</label><input id="f_cost" type="number" inputmode="decimal" value="${r.cost??""}"></div></div>
   <label>Parçanın alındığı toptancı</label><input id="f_sup" list="suplist" value="${esc(r.sup)}" placeholder="Örn. Ahmet Telekom"><datalist id="suplist">${[...new Set(db.repairs.map(x=>x.sup).filter(Boolean))].map(s=>`<option value="${esc(s)}">`).join("")}</datalist>
@@ -200,15 +239,17 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("button,a");if(!b)return;const d=b.dataset;
   if(d.menu!==undefined)openMenu();
   else if(d.menuclose!==undefined)closeMenu();
-  else if(d.v){view=d.v;if(view=="imei"){curEdv=null;edvFor="";edvState=null;lastTac=""}closeMenu();render();scrollTo(0,0)}
+  else if(d.v){const from=NAV.findIndex(n=>n[0]==view);view=d.v;if(view=="imei"){curEdv=null;edvFor="";edvState=null;lastTac=""}closeMenu();render();scrollTo(0,0);if(from>=0)slideIn(Math.sign(NAV.findIndex(n=>n[0]==view)-from))}
   else if(d.f!==undefined){flt=d.f=="all"?"all":+d.f;render()}
   else if(d.m){const [y,m]=month.split("-");month=new Date(y,m-1+ +d.m,1).toISOString().slice(0,7);render()}
   else if(d.r)repairForm(d.r);
   else if(d.t)txForm(d.t);
   else if(b.id=="fab")view=="repairs"?repairForm():txForm();
   else if(d.themeset)setTheme(d.themeset);
+  else if(d.navset)setNav(d.navset);
   else if(d.pasteimei!==undefined)pasteImei();
   else if(d.scan!==undefined)startScan();
+  else if(d.gallery!==undefined)photoScan(true);
   else if(d.stopscan!==undefined)stopScan();
   else if(d.edvq!==undefined)edvQuery();
   else if(d.edvsend!==undefined)edvSend();
@@ -249,7 +290,7 @@ $("#drawerbg").addEventListener("click",closeMenu);
   const clear=()=>{for(const el of [dr,bg])el.style.transition=el.style.transform=el.style.visibility=el.style.opacity=el.style.pointerEvents="";drag=false;x0=null};
   document.addEventListener("touchstart",e=>{
     x0=null;if(e.touches.length!=1||$("#sh")||$("#scan"))return;
-    const t=e.touches[0];if(!dr.classList.contains("open")&&t.clientX>28)return;
+    const t=e.touches[0];if(!dr.classList.contains("open")&&(t.clientX>28||navMode=="bottom"))return;
     x0=t.clientX;y0=t.clientY;dx=0;drag=false;w=dr.offsetWidth;
   },{passive:true});
   document.addEventListener("touchmove",e=>{
@@ -338,6 +379,8 @@ document.addEventListener("input",e=>{
   // Sadece bir boşluk silindiyse, önündeki rakamı da sil (yoksa silme tuşu takılı kalır)
   if(e.inputType=="deleteContentBackward"&&v.replace(/\D/g,"")==prev.replace(/\D/g,"")&&pos>0){v=v.slice(0,pos-1)+v.slice(pos);pos--}
   if(v&&!/^[0+]/.test(v)){v="0"+v;pos++}
+  // Otomatik gelen 0'dan sonra numara yine 0 ile yazılırsa çift sıfırı teke indir
+  if(/^00/.test(v)){const n=v.match(/^0+/)[0].length-1;v=v.slice(n);pos=Math.max(1,pos-n)}
   const keep=v.slice(0,pos).replace(/\s/g,"").length,f=fmtPhone(v);
   let i=0,n=0;while(i<f.length&&n<keep){if(f[i]!=" ")n++;i++}
   t.value=f;t._prev=f;try{t.setSelectionRange(i,i)}catch(e){}
@@ -400,26 +443,97 @@ function setImei(v){
   const m=String(v).match(/\d{15}/g)||[];const c=m.find(luhn)||m[0];if(!c)return false;
   $("#f_imei").value=c;$("#imeiMsg").textContent=luhn(c)?"IMEI okundu.":"IMEI okundu ancak doğrulama hanesi uyuşmuyor, lütfen kontrol edin.";lastTac=c.slice(0,8);fillTac(c);edvImeiChanged(c);return true;
 }
-const mkDet=()=>new BarcodeDetector({formats:["code_128","code_39","ean_13","itf","qr_code","data_matrix"]});
+// ---- Barkod okuma ----
+// Tarayıcının kendi okuyucusu (BarcodeDetector) varsa o kullanılır. iPhone'daki Safari/Chrome ve
+// bilgisayardaki Chrome'da olmadığı için, o durumda ZXing kütüphanesi bir kez yüklenip kullanılır.
+const FORMATS=["code_128","code_39","ean_13","itf","qr_code","data_matrix"];
+const ZX_SRC=["https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js","https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"];
+let zxLoad=null,detP=null;
+function loadZXing(){
+  if(window.ZXing)return Promise.resolve();
+  return zxLoad||(zxLoad=new Promise((ok,no)=>{
+    const next=i=>{if(i>=ZX_SRC.length){zxLoad=null;return no(new Error("ZXing yüklenemedi"))}
+      const sc=document.createElement("script");sc.src=ZX_SRC[i];sc.onload=()=>window.ZXing?ok():next(i+1);sc.onerror=()=>{sc.remove();next(i+1)};document.head.appendChild(sc)};
+    next(0);
+  }));
+}
+async function makeDetector(){
+  if(window.BarcodeDetector){try{const f=await BarcodeDetector.getSupportedFormats();if(f.includes("code_128"))return new BarcodeDetector({formats:FORMATS.filter(x=>f.includes(x))})}catch(e){}}
+  await loadZXing();
+  const Z=window.ZXing,B=Z.BarcodeFormat,hints=new Map();
+  hints.set(Z.DecodeHintType.POSSIBLE_FORMATS,[B.CODE_128,B.CODE_39,B.EAN_13,B.ITF,B.QR_CODE,B.DATA_MATRIX]);hints.set(Z.DecodeHintType.TRY_HARDER,true);
+  const reader=new Z.MultiFormatReader();reader.setHints(hints);
+  const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});
+  const cv2=document.createElement("canvas"),cx2=cv2.getContext("2d",{willReadFrequently:true});
+  // ZXing'in tuval kaynağı kırpmayı desteklemiyor: şeridi ayrı bir tuvale çizip oradan oku
+  const part=(x,y,w,h)=>{cv2.width=w;cv2.height=h;cx2.drawImage(cv,x,y,w,h,0,0,w,h);return new Z.HTMLCanvasElementLuminanceSource(cv2)};
+  const dec=src=>{try{return reader.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(src))).getText()}catch(e){return null}};
+  const isImei=t=>t&&/\d{15}/.test(t);
+  // Görüntüyü en fazla max piksele küçültüp önce tamamını, sonra şeritlerini dener (etikette seri no, IMEI1, IMEI2 olabilir)
+  const scan=async(img,max,strips,up=1)=>{ // up: küçük görüntüyü en fazla bu kadar büyüt (ince çizgiler için)
+    const w=img.videoWidth||img.width,h=img.videoHeight||img.height;if(!w||!h)return [];
+    const k=Math.min(up,max/Math.max(w,h));cv.width=Math.round(w*k);cv.height=Math.round(h*k);cx.drawImage(img,0,0,cv.width,cv.height);
+    return scanCanvas(strips);
+  };
+  // Tuvaldeki görüntünün tamamını, IMEI çıkmazsa şeritlerini dener
+  const scanCanvas=async strips=>{
+    const out=[],lum=new Z.HTMLCanvasElementLuminanceSource(cv),W=cv.width,H=cv.height,add=r=>{if(r&&!out.includes(r))out.push(r);return isImei(r)};
+    if(add(dec(lum)))return out;
+    for(const [n,dir] of strips){ // n şerit, yarısı kadar kaydırarak; dir: "y" yatay şerit, "x" dikey şerit (yan çekilmiş etiket)
+      const L=dir=="y"?H:W,sz=Math.round(L*2/(n+1)),step=Math.round(L/(n+1));
+      for(let i=0;i<n;i++){const p=Math.min(i*step,L-sz);if(add(dec(dir=="y"?part(0,p,W,sz):part(p,0,sz,H))))return out;if(strips.length>1)await new Promise(r=>setTimeout(r))}
+    }
+    return out;
+  };
+  return {
+    detect:async img=>(await scan(img,1280,[[3,"y"]])).map(rawValue=>({rawValue})), // kamera: hızlı
+    detectStill:async img=>{ // galeri/fotoğraf: önce bütün fotoğraf, sonra tam çözünürlükte örtüşen parçalar
+      const all=[],keep=rs=>{for(const r of rs)if(!all.includes(r))all.push(r);return all.some(isImei)},done=()=>all.map(rawValue=>({rawValue}));
+      if(keep(await scan(img,1600,[[5,"y"]])))return done();
+      const w=img.width,h=img.height;
+      // Büyük fotoğrafta daha az küçülterek tekrar dene; küçük (ör. kırpılmış) fotoğrafı farklı oranlarda büyüterek dene
+      // (ince barkod çizgileri bazı oranlarda okunamıyor, bu yüzden birkaç oran)
+      if(Math.max(w,h)>2400){if(keep(await scan(img,2400,[[5,"y"]])))return done()}
+      else for(const up of [1.5,2,1.25])if(keep(await scan(img,4800,[[5,"y"]],up)))return done();
+      // Etiket fotoğrafta küçükse: 3x3 örtüşen parça (her biri fotoğrafın %60'ı), küçültmeden (en fazla 2600 piksel)
+      if(Math.max(w,h)>2400)for(const fy of [0,.2,.4])for(const fx of [0,.2,.4]){
+        const tw=Math.round(w*.6),th=Math.round(h*.6),k=Math.min(1,2600/Math.max(tw,th));
+        cv.width=Math.round(tw*k);cv.height=Math.round(th*k);cx.drawImage(img,Math.round(w*fx),Math.round(h*fy),tw,th,0,0,cv.width,cv.height);
+        if(keep([dec(new Z.HTMLCanvasElementLuminanceSource(cv))].filter(Boolean)))return done();
+        await new Promise(r=>setTimeout(r));
+      }
+      return done();
+    }
+  };
+}
+const getDetector=()=>detP||(detP=makeDetector().catch(e=>{detP=null;throw e}));
+const NO_READER="Barkod okuyucu yüklenemedi (internet bağlantısını kontrol edin). IMEI’yi elle yazın.";
 async function startScan(){
-  const msg=$("#imeiMsg");
-  if(!window.BarcodeDetector){msg.textContent="Bu tarayıcı barkod okumayı desteklemiyor. IMEI’yi elle yazın.";return}
+  const msg=$("#imeiMsg");const dp=getDetector();dp.catch(()=>{});
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})}
   catch(e){msg.textContent="Kamera açılamadı. Etiketin fotoğrafını çekerek deneyin.";photoScan();return}
-  const det=mkDet(),o=document.createElement("div");o.className="scan";o.id="scan";
-  o.innerHTML='<video playsinline muted></video><div class="scanhint">Barkodu çerçeveye getirin</div><button class="btn" data-stopscan>Kapat</button>';
-  document.body.appendChild(o);const v=o.querySelector("video");v.srcObject=stream;await v.play();
-  scanTimer=setInterval(async()=>{try{for(const x of await det.detect(v)){if(setImei(x.rawValue)){stopScan();return}}}catch(e){}},300);
+  const o=document.createElement("div");o.className="scan";o.id="scan";
+  o.innerHTML='<video playsinline muted></video><div class="scanhint">Barkod okuyucu hazırlanıyor…</div><button class="btn" data-stopscan>Kapat</button>';
+  document.body.appendChild(o);const v=o.querySelector("video");v.srcObject=stream;try{await v.play()}catch(e){}
+  let det;try{det=await dp}catch(e){stopScan();msg.textContent=NO_READER;return}
+  if(!$("#scan"))return; // bu arada kapatıldı
+  o.querySelector(".scanhint").textContent="Barkodu çerçeveye getirin";
+  let busy=false;
+  scanTimer=setInterval(async()=>{if(busy)return;busy=true;try{for(const x of await det.detect(v)){if(setImei(x.rawValue)){stopScan();return}}}catch(e){}finally{busy=false}},250);
 }
 function stopScan(){clearInterval(scanTimer);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;const o=$("#scan");if(o)o.remove()}
-function photoScan(){
-  const i=document.createElement("input");i.type="file";i.accept="image/*";i.capture="environment";
-  i.onchange=async()=>{const f=i.files[0];if(!f)return;try{const r=await mkDet().detect(await createImageBitmap(f));
-    if(!r.some(x=>setImei(x.rawValue)))$("#imeiMsg").textContent="Barkod okunamadı. Daha yakından çekin veya IMEI’yi elle yazın."}
-    catch(e){$("#imeiMsg").textContent="Fotoğraf okunamadı. IMEI’yi elle yazın."}};
+// Fotoğraftan barkod okuma. gallery=true: galeriden seçilir; değilse kamera ile çekilir.
+function photoScan(gallery){
+  const i=document.createElement("input");i.type="file";i.accept="image/*";if(!gallery)i.capture="environment";
+  i.onchange=async()=>{const f=i.files[0],msg=$("#imeiMsg");if(!f||!msg)return;
+    msg.textContent="Fotoğraftaki barkod okunuyor…";
+    let det;try{det=await getDetector()}catch(e){msg.textContent=NO_READER;return}
+    try{const bmp=await createImageBitmap(f),r=await (det.detectStill||det.detect).call(det,bmp);
+      if(!r.some(x=>setImei(x.rawValue)))msg.textContent=(r.length?"Fotoğrafta IMEI barkodu okunamadı.":"Fotoğrafta barkod bulunamadı.")+" Barkodu daha yakından ve net çekip tekrar deneyin; fotoğrafı barkodun etrafından kırpmak da işe yarayabilir. Olmazsa IMEI’yi elle yazın."}
+    catch(e){msg.textContent="Fotoğraf açılamadı. Başka bir fotoğraf seçin ya da IMEI’yi elle yazın."}};
   i.click();
 }
-render();
+applyNav();render();
 </script>
 </body>
 </html>
