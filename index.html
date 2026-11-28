@@ -442,21 +442,58 @@ function setImei(v){
   const m=String(v).match(/\d{15}/g)||[];const c=m.find(luhn)||m[0];if(!c)return false;
   $("#f_imei").value=c;$("#imeiMsg").textContent=luhn(c)?"IMEI okundu.":"IMEI okundu ancak doğrulama hanesi uyuşmuyor, lütfen kontrol edin.";lastTac=c.slice(0,8);fillTac(c);edvImeiChanged(c);return true;
 }
-const mkDet=()=>new BarcodeDetector({formats:["code_128","code_39","ean_13","itf","qr_code","data_matrix"]});
+// ---- Barkod okuma ----
+// Tarayıcının kendi okuyucusu (BarcodeDetector) varsa o kullanılır. iPhone'daki Safari/Chrome ve
+// bilgisayardaki Chrome'da olmadığı için, o durumda ZXing kütüphanesi bir kez yüklenip kullanılır.
+const FORMATS=["code_128","code_39","ean_13","itf","qr_code","data_matrix"];
+const ZX_SRC=["https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js","https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"];
+let zxLoad=null,detP=null;
+function loadZXing(){
+  if(window.ZXing)return Promise.resolve();
+  return zxLoad||(zxLoad=new Promise((ok,no)=>{
+    const next=i=>{if(i>=ZX_SRC.length){zxLoad=null;return no(new Error("ZXing yüklenemedi"))}
+      const sc=document.createElement("script");sc.src=ZX_SRC[i];sc.onload=()=>window.ZXing?ok():next(i+1);sc.onerror=()=>{sc.remove();next(i+1)};document.head.appendChild(sc)};
+    next(0);
+  }));
+}
+async function makeDetector(){
+  if(window.BarcodeDetector){try{const f=await BarcodeDetector.getSupportedFormats();if(f.includes("code_128"))return new BarcodeDetector({formats:FORMATS.filter(x=>f.includes(x))})}catch(e){}}
+  await loadZXing();
+  const Z=window.ZXing,B=Z.BarcodeFormat,hints=new Map();
+  hints.set(Z.DecodeHintType.POSSIBLE_FORMATS,[B.CODE_128,B.CODE_39,B.EAN_13,B.ITF,B.QR_CODE,B.DATA_MATRIX]);hints.set(Z.DecodeHintType.TRY_HARDER,true);
+  const reader=new Z.MultiFormatReader();reader.setHints(hints);
+  const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});
+  const dec=src=>{try{return reader.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(src))).getText()}catch(e){return null}};
+  return {detect:async img=>{
+    const w=img.videoWidth||img.width,h=img.videoHeight||img.height;if(!w||!h)return [];
+    const k=Math.min(1,1280/Math.max(w,h));cv.width=Math.round(w*k);cv.height=Math.round(h*k);cx.drawImage(img,0,0,cv.width,cv.height);
+    const lum=new Z.HTMLCanvasElementLuminanceSource(cv),out=[],t=dec(lum);if(t)out.push(t);
+    // Etikette birden çok barkod varsa (IMEI1, IMEI2, seri no) görüntüyü yatay şeritlere bölüp tek tek dene
+    if(!(t&&/\d{15}/.test(t))){const W=cv.width,H=cv.height,bh=Math.round(H/2);
+      for(const y of [0,Math.round(H/4),H-bh]){const r=dec(lum.crop(0,y,W,bh));if(r&&!out.includes(r))out.push(r);if(r&&/\d{15}/.test(r))break}}
+    return out.map(rawValue=>({rawValue}));
+  }};
+}
+const getDetector=()=>detP||(detP=makeDetector().catch(e=>{detP=null;throw e}));
+const NO_READER="Barkod okuyucu yüklenemedi (internet bağlantısını kontrol edin). IMEI’yi elle yazın.";
 async function startScan(){
-  const msg=$("#imeiMsg");
-  if(!window.BarcodeDetector){msg.textContent="Bu tarayıcı barkod okumayı desteklemiyor. IMEI’yi elle yazın.";return}
+  const msg=$("#imeiMsg");const dp=getDetector();dp.catch(()=>{});
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})}
   catch(e){msg.textContent="Kamera açılamadı. Etiketin fotoğrafını çekerek deneyin.";photoScan();return}
-  const det=mkDet(),o=document.createElement("div");o.className="scan";o.id="scan";
-  o.innerHTML='<video playsinline muted></video><div class="scanhint">Barkodu çerçeveye getirin</div><button class="btn" data-stopscan>Kapat</button>';
-  document.body.appendChild(o);const v=o.querySelector("video");v.srcObject=stream;await v.play();
-  scanTimer=setInterval(async()=>{try{for(const x of await det.detect(v)){if(setImei(x.rawValue)){stopScan();return}}}catch(e){}},300);
+  const o=document.createElement("div");o.className="scan";o.id="scan";
+  o.innerHTML='<video playsinline muted></video><div class="scanhint">Barkod okuyucu hazırlanıyor…</div><button class="btn" data-stopscan>Kapat</button>';
+  document.body.appendChild(o);const v=o.querySelector("video");v.srcObject=stream;try{await v.play()}catch(e){}
+  let det;try{det=await dp}catch(e){stopScan();msg.textContent=NO_READER;return}
+  if(!$("#scan"))return; // bu arada kapatıldı
+  o.querySelector(".scanhint").textContent="Barkodu çerçeveye getirin";
+  let busy=false;
+  scanTimer=setInterval(async()=>{if(busy)return;busy=true;try{for(const x of await det.detect(v)){if(setImei(x.rawValue)){stopScan();return}}}catch(e){}finally{busy=false}},250);
 }
 function stopScan(){clearInterval(scanTimer);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;const o=$("#scan");if(o)o.remove()}
 function photoScan(){
   const i=document.createElement("input");i.type="file";i.accept="image/*";i.capture="environment";
-  i.onchange=async()=>{const f=i.files[0];if(!f)return;try{const r=await mkDet().detect(await createImageBitmap(f));
+  i.onchange=async()=>{const f=i.files[0];if(!f)return;let det;try{det=await getDetector()}catch(e){$("#imeiMsg").textContent=NO_READER;return}
+    try{const r=await det.detect(await createImageBitmap(f));
     if(!r.some(x=>setImei(x.rawValue)))$("#imeiMsg").textContent="Barkod okunamadı. Daha yakından çekin veya IMEI’yi elle yazın."}
     catch(e){$("#imeiMsg").textContent="Fotoğraf okunamadı. IMEI’yi elle yazın."}};
   i.click();
