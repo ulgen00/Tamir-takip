@@ -340,6 +340,25 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
                 else OutlinedButton(onClick = { ip = f.ip; port = f.port.toString(); save() }) { Text("Seç") }
             }
         }
+        // Yazıcının komut dili ve hangisini anladığını bulmak için deneme
+        Label("Yazıcı dili")
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("TSPL", "ZPL", "EPL").forEach { l -> FChip(l, cfg.lang == l) { save(vm.printer.copy(lang = l)) } }
+        }
+        Text("Etiket çıkmıyorsa dilleri tek tek deneyin; hangi deneme etiketi çıkarsa o dili seçin. Çoğu Xprinter/Gprinter TSPL, Zebra ZPL, bazı HPRT modelleri EPL ya da ZPL kullanır.",
+            style = mutStyle, modifier = Modifier.padding(top = 6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+            listOf("TSPL", "ZPL", "EPL").forEach { l ->
+                OutlinedButton(enabled = !busy, onClick = {
+                    busy = true
+                    scope.launch {
+                        val err = LabelPrinter.send(vm.printer, LabelPrinter.langTest(l, vm.printer))
+                        busy = false
+                        say(err ?: "$l deneme etiketi gönderildi. Yazıcıdan \"$l CALISIYOR\" yazılı etiket çıktıysa yukarıdan $l’yi seçin.")
+                    }
+                }) { Text("$l dene") }
+            }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for ((label, value, set) in listOf(
                 Triple("Genişlik (mm)", wmm) { v: String -> wmm = v },

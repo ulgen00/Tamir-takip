@@ -34,6 +34,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             ip = prefs.getString("yz_ip", "") ?: "", port = prefs.getInt("yz_port", 9100),
             widthMm = prefs.getInt("yz_gen", 60), heightMm = prefs.getInt("yz_yuk", 30), gapMm = prefs.getInt("yz_bosluk", 2),
             rotate = prefs.getBoolean("yz_cevir", false), invert = prefs.getBoolean("yz_ters", false), autoPrint = prefs.getBoolean("yz_oto", false),
+            lang = prefs.getString("yz_dil", "TSPL") ?: "TSPL",
         )
     )
         private set
@@ -41,7 +42,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updatePrinter(c: PrinterCfg) {
         printer = c
         prefs.edit().putString("yz_ip", c.ip.trim()).putInt("yz_port", c.port).putInt("yz_gen", c.widthMm).putInt("yz_yuk", c.heightMm)
-            .putInt("yz_bosluk", c.gapMm).putBoolean("yz_cevir", c.rotate).putBoolean("yz_ters", c.invert).putBoolean("yz_oto", c.autoPrint).apply()
+            .putInt("yz_bosluk", c.gapMm).putBoolean("yz_cevir", c.rotate).putBoolean("yz_ters", c.invert).putBoolean("yz_oto", c.autoPrint).putString("yz_dil", c.lang).apply()
     }
 
     /** Kullanıcının etiket tasarımı; null ise hazır tasarım (etiket boyuna göre) */
