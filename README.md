@@ -53,7 +53,7 @@ kesin kayıt değildir.
 
 ## Android uygulaması (APK)
 
-`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.0).
+`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.2).
 Siteye bağlı değildir; internetsiz çalışır (internet yalnızca e-Devlet IMEI sorgusu için gerekir).
 Geliştirmeye bu uygulama üzerinden devam ediliyor; iPhone için web sürümü (`index.html`) kullanılmaya devam ediyor.
 
@@ -63,9 +63,17 @@ Geliştirmeye bu uygulama üzerinden devam ediliyor; iPhone için web sürümü 
   veritabanı), 15 hane olunca e-Devlet kaydı (Worker üzerinden, `X-Cep-Atolyesi: android` başlığıyla).
 - Barkod: CameraX + Google ML Kit (model uygulamanın içinde), kamera ve galeriden fotoğraf.
 - Kayıtlar telefonda tek bir JSON dosyasında; biçim web sürümüyle aynı. Ayarlar > Yedekleme ile dışa/içe aktarılır.
+- Etiket yazdırma: ağdaki termal etiket yazıcısına (Xprinter, Gprinter vb., TSPL, ham TCP 9100) cihaz formundaki
+  "Etiket yazdır" düğmesiyle ya da yeni kayıtta otomatik. Etiket (varsayılan 60x30 mm) uygulamada resim olarak çizilir
+  (Türkçe karakterler için) ve BITMAP komutuyla gönderilir: dükkan adı, tarih, müşteri, telefon, model, arıza,
+  kayıt no ve barkodu. Yazıcı IP'si, boyut, 180° çevirme ve ters renk Ayarlar'da (`Label.kt`).
+- Etiket tasarımı (Ayarlar > Etiket tasarımını düzenle): yazı, barkod, QR kod, çizgi ve kutu eklenir; önizlemede
+  dokunarak seçilir, sürükleyerek taşınır; yazı boyu, kalınlık, hizalama, boyut ve konum ayarlanır. Yazılarda
+  `{ad}`, `{telefon}`, `{model}`, `{ariza}`, `{imei}`, `{tarih}`, `{kayitno}`, `{ucret}`, `{durum}`, `{toptanci}`
+  kayıttaki bilgiyle doldurulur. Tasarım telefonda saklanır; "Varsayılana dön" hazır tasarıma döner (`LabelTemplate.kt`).
 
 Kod düzeni (`android/app/src/main/java/com/cepatolyesi/app/`):
-`Model.kt` (kayıtlar), `Util.kt` (IMEI, telefon, para), `Lookup.kt` (TAC ve e-Devlet), `AppState.kt`
+`Model.kt` (kayıtlar), `Label.kt` ve `LabelTemplate.kt` (etiket), `Util.kt` (IMEI, telefon, para), `Lookup.kt` (TAC ve e-Devlet), `AppState.kt`
 (ayarlar ve IMEI mantığı), `ui/` (ekranlar).
 
 Derleme ve test (Android SDK platform 35, Java 17+):

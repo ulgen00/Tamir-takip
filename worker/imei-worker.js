@@ -153,13 +153,24 @@ async function query(input) {
     try { s = dec(input.state); } catch (e) { return { error: "Oturum bilgisi bozuk, sorguyu yeniden başlatın." }; }
     return submit(new Jar(s.c), { action: s.a, hidden: s.h, field: s.f }, imei, String(input.code || "").trim());
   }
-  const jar = new Jar();
-  const page = await getHtml(jar, PAGE);
-  const form = parseForm(page.html);
-  if (!form) return { error: "e-Devlet IMEI sorgu sayfası açılamadı." };
-  if (form.field && form.img) return captchaChallenge(jar, form);
-  return submit(jar, form, imei);
+  // e-Devlet ara sıra isteği geri çeviriyor (sayfa açılmıyor ya da sonuç okunamıyor): yeni oturumla 3 kez dene
+  let last;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await sleep(700 * attempt);
+    try {
+      const jar = new Jar();
+      const page = await getHtml(jar, PAGE);
+      const form = parseForm(page.html);
+      if (!form) { last = { error: "e-Devlet IMEI sorgu sayfası açılamadı. Biraz sonra tekrar deneyin." }; continue; }
+      if (form.field && form.img) return captchaChallenge(jar, form);
+      const r = await submit(jar, form, imei);
+      if (r.ok || r.captcha || !TRANSIENT.test(r.error || "")) return r;
+      last = r;
+    } catch (e) { last = { error: "e-Devlet'e ulaşılamadı. Biraz sonra tekrar deneyin." }; }
+  }
+  return last;
 }
+const TRANSIENT = /okunamadı|tamamlayamadı|açılamadı|ulaşılamadı/;
 
 export default {
   async fetch(request, env) {

@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -26,6 +27,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     /** Kasa ve Özet'te gösterilen ay */
     var month by mutableStateOf(YearMonth.now())
+
+    /** Ağdaki etiket yazıcısı */
+    var printer by mutableStateOf(
+        PrinterCfg(
+            ip = prefs.getString("yz_ip", "") ?: "", port = prefs.getInt("yz_port", 9100),
+            widthMm = prefs.getInt("yz_gen", 60), heightMm = prefs.getInt("yz_yuk", 30), gapMm = prefs.getInt("yz_bosluk", 2),
+            rotate = prefs.getBoolean("yz_cevir", false), invert = prefs.getBoolean("yz_ters", false), autoPrint = prefs.getBoolean("yz_oto", false),
+        )
+    )
+        private set
+
+    fun updatePrinter(c: PrinterCfg) {
+        printer = c
+        prefs.edit().putString("yz_ip", c.ip.trim()).putInt("yz_port", c.port).putInt("yz_gen", c.widthMm).putInt("yz_yuk", c.heightMm)
+            .putInt("yz_bosluk", c.gapMm).putBoolean("yz_cevir", c.rotate).putBoolean("yz_ters", c.invert).putBoolean("yz_oto", c.autoPrint).apply()
+    }
+
+    /** Kullanıcının etiket tasarımı; null ise hazır tasarım (etiket boyuna göre) */
+    var labelTemplate by mutableStateOf(prefs.getString("etiket_sablon", null)?.let { runCatching { LabelTemplate.fromJson(it) }.getOrNull() })
+        private set
+    fun updateTemplate(t: LabelTemplate?) {
+        labelTemplate = t
+        prefs.edit().apply { if (t == null) remove("etiket_sablon") else putString("etiket_sablon", t.toJson()) }.apply()
+    }
+    /** Düzenlenecek/basılacak şablon */
+    fun currentTemplate(): LabelTemplate = labelTemplate ?: LabelTemplate.default(printer.widthMm, printer.heightMm)
+
+    /** Etiketi yazıcıya gönderir; sonuç mesajı ana iş parçacığında döner. Form kapansa da devam eder. */
+    fun printLabel(r: Repair, onDone: (String) -> Unit) {
+        val cfg = printer
+        val tpl = currentTemplate()
+        viewModelScope.launch { onDone(LabelPrinter.print(r, cfg, tpl) ?: "Etiket yazıcıya gönderildi.") }
+    }
 
     fun updateTheme(t: ThemeMode) { theme = t; prefs.edit().putString("tema", t.name).apply() }
     fun updateNav(n: NavMode) { nav = n; prefs.edit().putString("gezinme", n.name).apply() }
