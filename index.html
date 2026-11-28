@@ -140,7 +140,7 @@ function repairForm(id){
   <label>Müşteri adı</label><input id="f_name" value="${esc(r.name)}">
   <label>Telefon numarası</label><input id="f_phone" type="tel" inputmode="tel" value="${esc(r.phone)}">
   <label>Cihaz (marka / model)</label><input id="f_model" value="${esc(r.model)}" placeholder="Örn. Samsung A54">
-  <label>IMEI</label><div class="row"><input id="f_imei" inputmode="numeric" maxlength="17" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><button class="btn" type="button" data-scan>Barkod tara</button></div><a class="btn" href="https://www.turkiye.gov.tr/imei-sorgulama" target="_blank" rel="noopener" data-egov style="display:inline-block;margin-top:8px">e-Devlet’te marka/model sorgula</a><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
+  <label>IMEI</label><div class="row"><input id="f_imei" inputmode="numeric" maxlength="17" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><button class="btn" type="button" data-scan>Barkod tara</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
   <label>Arıza / yapılacak iş</label><textarea id="f_issue" rows="2">${esc(r.issue)}</textarea>
   <div class="g2"><div><label>Ücret (₺)</label><input id="f_price" type="number" inputmode="decimal" value="${r.price??""}"></div><div><label>Parça maliyeti (₺)</label><input id="f_cost" type="number" inputmode="decimal" value="${r.cost??""}"></div></div>
   <label>Parçanın alındığı toptancı</label><input id="f_sup" list="suplist" value="${esc(r.sup)}" placeholder="Örn. Ahmet Telekom"><datalist id="suplist">${[...new Set(db.repairs.map(x=>x.sup).filter(Boolean))].map(s=>`<option value="${esc(s)}">`).join("")}</datalist>
@@ -174,7 +174,6 @@ document.addEventListener("click",async e=>{
   else if(d.t)txForm(d.t);
   else if(b.id=="fab")view=="repairs"?repairForm():txForm();
   else if(d.themeset)setTheme(d.themeset);
-  else if(d.egov!==undefined)copyImei();
   else if(d.scan!==undefined)startScan();
   else if(d.stopscan!==undefined)stopScan();
   else if(d.edvq!==undefined)edvQuery();
@@ -252,7 +251,7 @@ async function fillTac(c){
     spec=await tacLookup(tac);
     if($("#f_imei")?.value.replace(/\D/g,"").slice(0,8)!==tac)return; // bu arada IMEI değişti
     if(spec===undefined){msg.textContent="Model veritabanına ulaşılamadı (internet bağlantısını kontrol edin). Marka/modeli elle yazın.";return}
-    if(spec===null){if(autoModel&&f.value.trim()==autoModel){f.value="";autoModel=""}msg.textContent="Bu IMEI veritabanında bulunamadı. e-Devlet’ten sorgulayıp marka/modeli elle yazın; bir sonraki sefer otomatik dolar.";return}
+    if(spec===null){if(autoModel&&f.value.trim()==autoModel){f.value="";autoModel=""}msg.textContent="Bu IMEI model veritabanında bulunamadı. Marka/modeli elle yazın; bir sonraki sefer otomatik dolar.";return}
     m=prettyModel(spec);
   }
   const ok=c.length<15||luhn(c);
@@ -260,7 +259,6 @@ async function fillTac(c){
   else msg.textContent="Bu IMEI için bulunan model: "+m+(spec?" ("+spec+")":"")+". Alan dolu olduğu için değiştirilmedi.";
   if(!ok)msg.textContent+=" Uyarı: IMEI doğrulama hanesi uyuşmuyor, kontrol edin.";
 }
-function copyImei(){const v=$("#f_imei").value.replace(/\D/g,"");if(v.length>=8){try{navigator.clipboard.writeText(v)}catch(e){}$("#imeiMsg").textContent="IMEI kopyalandı. Açılan sayfaya yapıştırın, sonra marka/modeli buraya yazın."}}
 let lastTac="";
 document.addEventListener("input",e=>{if(e.target.id=="f_imei"){const v=e.target.value.replace(/\D/g,"");
   if(v.length>=8&&(v.slice(0,8)!=lastTac||v.length==15)){lastTac=v.slice(0,8);fillTac(v)}else if(v.length<8)lastTac="";
@@ -274,7 +272,7 @@ let curEdv=null,edvFor="",edvState=null;
 const EDV_L={kayitli:["Kayıtlı","s2"],kayitsiz:["Kayıtsız","s4"],kapali:["Kapalı","s4"],bilinmiyor:["Durum","s3"]};
 const edvChip=e=>e&&EDV_L[e.sinif]?`<span class="chip ${EDV_L[e.sinif][1]}">${EDV_L[e.sinif][0]}</span>`:"";
 function edvHtml(e){
-  if(!e)return EDV_API?`<button class="btn" type="button" data-edvq style="margin-top:8px">e-Devlet kaydını sorgula</button>`:"";
+  if(!e)return "";
   return `<div class="card" style="margin:8px 0 0"><div class="row sp"><span class="b">e-Devlet IMEI kaydı</span>${edvChip(e)}</div><div class="mut">${esc(e.durum)}</div>${e.kaynak?`<div class="mut">Kaynak: ${esc(e.kaynak)}</div>`:""}${e.model?`<div class="mut">${esc(e.model)}</div>`:""}
   <div class="row sp" style="margin-top:6px"><span class="mut">Sorgu tarihi: ${esc(e.tarih)}</span>${EDV_API?`<button class="btn" type="button" data-edvq>Yenile</button>`:""}</div></div>`;
 }
