@@ -149,7 +149,7 @@ function repairForm(id){
   <div class="row" style="margin-top:16px;flex-wrap:wrap"><button class="btn p" data-save-r="${id||""}">Kaydet</button>
   ${id&&r.st<3?`<button class="btn" data-deliver="${id}">Teslim et ve tahsil et</button>`:""}
   ${id&&r.phone?`<a class="btn" href="tel:${esc(r.phone.replace(/[^\d+]/g,""))}">Ara</a>`:""}
-  ${id?`<button class="btn d" data-del-r="${id}">Sil</button>`:""}<button class="btn" data-close>Kapat</button></div>`);
+  ${id?`<button class="btn d" data-del-r="${id}">Sil</button>`:""}</div>`);
 }
 function txForm(id){
   const t=db.tx.find(x=>x.id==id)||{type:"in",date:today()};
@@ -160,7 +160,7 @@ function txForm(id){
   <label>Kategori</label><select id="f_cat">${catOpts(t.type,t.cat)}</select>
   <label>Tarih</label><input id="f_date" type="date" value="${t.date}">
   <label>Not</label><input id="f_note" value="${esc(t.note)}">
-  <div class="row" style="margin-top:16px"><button class="btn p" data-save-t="${id||""}">Kaydet</button>${id?`<button class="btn d" data-del-t="${id}">Sil</button>`:""}<button class="btn" data-close>Kapat</button></div>`);
+  <div class="row" style="margin-top:16px"><button class="btn p" data-save-t="${id||""}">Kaydet</button>${id?`<button class="btn d" data-del-t="${id}">Sil</button>`:""}</div>`);
 }
 const catOpts=(type,sel)=>(type=="in"?CAT_IN:CAT_OUT).map(c=>`<option ${c==sel?"selected":""}>${c}</option>`).join("");
 
