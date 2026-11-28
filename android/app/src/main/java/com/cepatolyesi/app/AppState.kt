@@ -25,6 +25,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var nav by mutableStateOf(runCatching { NavMode.valueOf(prefs.getString("gezinme", "DRAWER")!!) }.getOrDefault(NavMode.DRAWER))
         private set
+    /** Sol üstte ve etiketlerde görünen dükkan adı (Ayarlar'dan değiştirilir) */
+    var shopName by mutableStateOf(prefs.getString("dukkan", DEFAULT_SHOP) ?: DEFAULT_SHOP)
+        private set
+    fun updateShopName(n: String) { shopName = n; prefs.edit().putString("dukkan", n).apply() }
+    /** Boş bırakılırsa varsayılan ad */
+    val shopTitle: String get() = shopName.trim().ifEmpty { DEFAULT_SHOP }
+
     /** Kasa ve Özet'te gösterilen ay */
     var month by mutableStateOf(YearMonth.now())
 
@@ -58,8 +65,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Etiketi yazıcıya gönderir; sonuç mesajı ana iş parçacığında döner. Form kapansa da devam eder. */
     fun printLabel(r: Repair, onDone: (String) -> Unit) {
         val cfg = printer
-        val tpl = currentTemplate()
-        viewModelScope.launch { onDone(LabelPrinter.print(r, cfg, tpl) ?: "Etiket yazıcıya gönderildi.") }
+        val tpl = currentTemplate(); val shop = shopTitle
+        viewModelScope.launch { onDone(LabelPrinter.print(r, cfg, tpl, shop) ?: "Etiket yazıcıya gönderildi.") }
     }
 
     fun updateTheme(t: ThemeMode) { theme = t; prefs.edit().putString("tema", t.name).apply() }

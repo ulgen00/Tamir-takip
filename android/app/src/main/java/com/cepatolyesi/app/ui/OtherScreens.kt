@@ -61,6 +61,7 @@ import com.cepatolyesi.app.AppViewModel
 import com.cepatolyesi.app.BuildConfigInfo
 import com.cepatolyesi.app.CAT_IN
 import com.cepatolyesi.app.CAT_OUT
+import com.cepatolyesi.app.DEFAULT_SHOP
 import com.cepatolyesi.app.ImeiState
 import com.cepatolyesi.app.LabelPrinter
 import com.cepatolyesi.app.NavMode
@@ -267,6 +268,10 @@ fun SettingsScreen(vm: AppViewModel, padding: PaddingValues) {
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(pad(padding)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Ayarlar", style = MaterialTheme.typography.titleLarge)
+        Text("Dükkan adı", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+        Text("Sol üstte ve etiketlerde görünür. Boş bırakılırsa “$DEFAULT_SHOP” yazar.", style = mutStyle)
+        OutlinedTextField(vm.shopName, { vm.updateShopName(it.take(40)) }, Modifier.fillMaxWidth(), singleLine = true, colors = fieldColors(),
+            placeholder = { Text(DEFAULT_SHOP) }, keyboardOptions = KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words))
         Text("Sekmelerin yeri", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
         Option("Soldan menü", "Sol üstteki ☰ düğmesiyle ya da ekranın sol kenarından sağa kaydırarak açılır.", vm.nav == NavMode.DRAWER) { vm.updateNav(NavMode.DRAWER) }
         Option("Alt çubuk", "Sekmeler ekranın altında, her zaman görünür.", vm.nav == NavMode.BOTTOM) { vm.updateNav(NavMode.BOTTOM) }
@@ -308,7 +313,7 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
     ))
 
     Text("Etiket yazıcısı", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
-    Text("Ağdaki termal etiket yazıcısı (Xprinter, Gprinter vb., TSPL). Yazıcı telefonla aynı Wi-Fi ağında olmalı; IP adresi yazıcının ağ ayarları fişinde yazar.", style = mutStyle)
+    Text("Ağdaki termal etiket yazıcısı (Wi-Fi ya da kabloyla modeme bağlı). Yazıcı telefonla aynı ağda olmalı; IP adresini “Ağda yazıcı ara” bulur ya da yazıcının ağ ayarları fişinde yazar.", style = mutStyle)
     AppCard {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(2f)) {
@@ -377,7 +382,7 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
         OutlinedButton(enabled = !busy, modifier = Modifier.padding(top = 8.dp), onClick = {
             busy = true
             scope.launch {
-                val err = LabelPrinter.print(SAMPLE_REPAIR, vm.printer, vm.currentTemplate())
+                val err = LabelPrinter.print(SAMPLE_REPAIR, vm.printer, vm.currentTemplate(), vm.shopTitle)
                 busy = false
                 say(err ?: "Deneme etiketi yazıcıya gönderildi.")
             }

@@ -95,7 +95,7 @@ fun AppRoot(vm: AppViewModel, dark: Boolean) {
             containerColor = c.bg,
             topBar = {
                 TopAppBar(
-                    title = { Text("Cep Atölyesi", color = c.acc, fontWeight = FontWeight.Bold, fontSize = 23.sp) },
+                    title = { Text(vm.shopTitle, color = c.acc, fontWeight = FontWeight.Bold, fontSize = 23.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                     navigationIcon = {
                         if (drawerMode) OutlinedIconButton(onClick = { scope.launch { drawer.open() } }, Modifier.padding(start = 8.dp),
                             shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, c.line)) { Icon(Icons.Filled.Menu, "Seçenekler") }

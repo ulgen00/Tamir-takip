@@ -32,8 +32,8 @@ object LabelPrinter {
     fun jobNo(id: String): String = id.uppercase().filter { it.isLetterOrDigit() }.takeLast(6)
 
     /** Etiketi şablona göre resim olarak çizer (Türkçe karakterler yazıcının yazı tipinden bağımsız çıkar). */
-    fun render(r: Repair, cfg: PrinterCfg, tpl: LabelTemplate? = null): Bitmap =
-        LabelTemplate.render(tpl ?: LabelTemplate.default(cfg.widthMm, cfg.heightMm), r, cfg)
+    fun render(r: Repair, cfg: PrinterCfg, tpl: LabelTemplate? = null, shop: String = DEFAULT_SHOP): Bitmap =
+        LabelTemplate.render(tpl ?: LabelTemplate.default(cfg.widthMm, cfg.heightMm), r, cfg, shop)
 
     /** TSPL komutu: etiket boyu, boşluk, yön ve 1 bitlik resim (BITMAP), ardından PRINT. */
     /** Resmi 1 bitlik satırlara çevirir; black1=true ise 1 = siyah nokta (ZPL), değilse 0 = siyah (TSPL, EPL) */
@@ -130,5 +130,6 @@ object LabelPrinter {
         }
     }
 
-    suspend fun print(r: Repair, cfg: PrinterCfg, tpl: LabelTemplate? = null, copies: Int = 1): String? = send(cfg, encode(render(r, cfg, tpl), cfg, copies))
+    suspend fun print(r: Repair, cfg: PrinterCfg, tpl: LabelTemplate? = null, shop: String = DEFAULT_SHOP, copies: Int = 1): String? =
+        send(cfg, encode(render(r, cfg, tpl, shop), cfg, copies))
 }

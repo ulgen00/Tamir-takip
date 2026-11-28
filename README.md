@@ -53,12 +53,12 @@ kesin kayıt değildir.
 
 ## Android uygulaması (APK)
 
-`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.4).
+`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.5).
 Siteye bağlı değildir; internetsiz çalışır (internet yalnızca e-Devlet IMEI sorgusu için gerekir).
 Geliştirmeye bu uygulama üzerinden devam ediliyor; iPhone için web sürümü (`index.html`) kullanılmaya devam ediyor.
 
 - Hazır APK: `apk/cep-atolyesi.apk` (Pages açıksa: `https://ulgen00.github.io/Tamir-takip/apk/cep-atolyesi.apk`)
-- Sayfalar: Tamir, Kasa, Özet, IMEI Sorgula, Ayarlar. Soldan menü ya da alt çubuk (Ayarlar'dan), güneş/ay ile tema.
+- Sayfalar: Tamir, Kasa, Özet, IMEI Sorgula, Ayarlar. Dükkan adı (sol üst ve etiketteki {dukkan}) Ayarlar’dan değişir. Soldan menü ya da alt çubuk (Ayarlar'dan), güneş/ay ile tema.
 - IMEI: yazınca/yapıştırınca marka/model (önce dükkanın kendi kayıtları, sonra uygulama içindeki `tac/`
   veritabanı), 15 hane olunca e-Devlet kaydı (Worker üzerinden, `X-Cep-Atolyesi: android` başlığıyla).
 - Barkod: CameraX + Google ML Kit (model uygulamanın içinde), kamera ve galeriden fotoğraf.
