@@ -90,9 +90,9 @@ function ask(msg,only){return new Promise(res=>{const d=document.createElement("
 const say=m=>ask(m,true);
 
 function render(){
-  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
-  $("#fab").style.display=view=="sum"?"none":"block";
-  $("#app").innerHTML=view=="repairs"?vRepairs():view=="cash"?vCash():vSum();
+  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["imei","IMEI Sorgula"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
+  $("#fab").style.display=view=="sum"||view=="imei"?"none":"block";
+  $("#app").innerHTML=view=="repairs"?vRepairs():view=="imei"?vImei():view=="cash"?vCash():vSum();
 }
 function vRepairs(){
   const counts=ST.map((_,i)=>db.repairs.filter(r=>r.st==i).length);
@@ -102,6 +102,13 @@ function vRepairs(){
   ${list.length?list.map(r=>`<button class="card item" data-r="${r.id}"><div class="row sp"><span class="b">${esc(r.model)}</span><span class="chip s${r.st}">${ST[r.st]}</span></div>
   <div class="mut">${esc(r.name)}${r.phone?" · "+esc(fmtPhone(r.phone)):""}</div><div class="mut">${esc(r.issue)}</div>${r.imei?`<div class="mut">IMEI ${esc(r.imei)}${r.edv?" "+edvChip(r.edv):""}</div>`:""}
   <div class="row sp" style="margin-top:6px"><span class="mut">${dfmt(r.date)}</span><span class="b">${money(r.price)}</span></div></button>`).join(""):`<div class="empty">Henüz cihaz yok. Sağ alttaki + ile ilk cihazı kaydedin.</div>`}`;
+}
+const IMEI_HINT="IMEI’yi yazın, yapıştırın ya da barkodunu tarayın. Telefondan *#06# tuşlayarak öğrenebilirsiniz.";
+function vImei(){
+  return `<h1>IMEI sorgulama</h1><div class="card">
+  <label for="f_imei" style="margin-top:0">IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" placeholder="15 haneli IMEI">
+  <div class="row" style="margin-top:8px"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button></div>
+  <div class="mut" id="imeiMsg" style="margin-top:8px">${IMEI_HINT}</div><div id="edv" aria-live="polite"></div></div>`;
 }
 function vCash(){
   const tx=db.tx.filter(t=>t.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
@@ -137,7 +144,7 @@ function sheet(html){
 function swipeClose(bg){
   const sh=bg.querySelector(".sheet");let y0=null,dy=0,drag=false;
   const reset=()=>{sh.style.transition="transform .2s ease";sh.style.transform="";bg.style.background="";drag=false;y0=null};
-  sh.addEventListener("touchstart",e=>{y0=e.touches.length==1?e.touches[0].clientY:null;dy=0;drag=false},{passive:true});
+  sh.addEventListener("touchstart",e=>{y0=e.touches.length==1&&!e.target.closest("input,textarea,select,[contenteditable]")?e.touches[0].clientY:null;dy=0;drag=false},{passive:true});
   sh.addEventListener("touchmove",e=>{
     if(y0==null)return;const d=e.touches[0].clientY-y0;
     if(!drag){if(d>8&&sh.scrollTop<=0)drag=true;else{if(Math.abs(d)>8)y0=null;return}}
@@ -159,7 +166,7 @@ function repairForm(id){
   <label>Müşteri adı</label><input id="f_name" value="${esc(r.name)}">
   <label>Telefon numarası</label><input id="f_phone" type="tel" inputmode="tel" value="${esc(fmtPhone(r.phone))}" placeholder="0532 123 45 67">
   <label>Cihaz (marka / model)</label><input id="f_model" value="${esc(r.model)}" placeholder="Örn. Samsung A54">
-  <label>IMEI</label><div class="row"><input id="f_imei" inputmode="numeric" maxlength="17" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><button class="btn" type="button" data-scan>Barkod tara</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
+  <label>IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><div class="row" style="margin-top:8px"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
   <label>Arıza / yapılacak iş</label><textarea id="f_issue" rows="2">${esc(r.issue)}</textarea>
   <div class="g2"><div><label>Ücret (₺)</label><input id="f_price" type="number" inputmode="decimal" value="${r.price??""}"></div><div><label>Parça maliyeti (₺)</label><input id="f_cost" type="number" inputmode="decimal" value="${r.cost??""}"></div></div>
   <label>Parçanın alındığı toptancı</label><input id="f_sup" list="suplist" value="${esc(r.sup)}" placeholder="Örn. Ahmet Telekom"><datalist id="suplist">${[...new Set(db.repairs.map(x=>x.sup).filter(Boolean))].map(s=>`<option value="${esc(s)}">`).join("")}</datalist>
@@ -186,13 +193,14 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("button,a");if(!b)return;const d=b.dataset;
   if(d.menu!==undefined)openMenu();
   else if(d.menuclose!==undefined)closeMenu();
-  else if(d.v){view=d.v;closeMenu();render();scrollTo(0,0)}
+  else if(d.v){view=d.v;if(view=="imei"){curEdv=null;edvFor="";edvState=null;lastTac=""}closeMenu();render();scrollTo(0,0)}
   else if(d.f!==undefined){flt=d.f=="all"?"all":+d.f;render()}
   else if(d.m){const [y,m]=month.split("-");month=new Date(y,m-1+ +d.m,1).toISOString().slice(0,7);render()}
   else if(d.r)repairForm(d.r);
   else if(d.t)txForm(d.t);
   else if(b.id=="fab")view=="repairs"?repairForm():txForm();
   else if(d.themeset)setTheme(d.themeset);
+  else if(d.pasteimei!==undefined)pasteImei();
   else if(d.scan!==undefined)startScan();
   else if(d.stopscan!==undefined)stopScan();
   else if(d.edvq!==undefined)edvQuery();
@@ -287,8 +295,8 @@ function prettyModel(spec){
     if(SPW[u])return SPW[u];if(UPW[u]||/\d/.test(w))return u;return u.charAt(0)+u.slice(1).toLowerCase()}).join(" ");
 }
 async function fillTac(c){
-  const tac=c.slice(0,8),msg=$("#imeiMsg"),f=$("#f_model");if(!msg||!f)return;
-  const canFill=()=>{const v=f.value.trim();return !v||v==autoModel};
+  const tac=c.slice(0,8),msg=$("#imeiMsg"),f=$("#f_model"),solo=!f;if(!msg)return; // solo: IMEI sorgulama ekranı (model alanı yok)
+  const canFill=()=>{if(solo)return true;const v=f.value.trim();return !v||v==autoModel};
   const learned=db.tac&&db.tac[tac];
   let m=learned,spec="";
   if(!m){
@@ -296,11 +304,12 @@ async function fillTac(c){
     spec=await tacLookup(tac);
     if($("#f_imei")?.value.replace(/\D/g,"").slice(0,8)!==tac)return; // bu arada IMEI değişti
     if(spec===undefined){msg.textContent="Model veritabanına ulaşılamadı (internet bağlantısını kontrol edin). Marka/modeli elle yazın.";return}
-    if(spec===null){if(autoModel&&f.value.trim()==autoModel){f.value="";autoModel=""}msg.textContent="Bu IMEI model veritabanında bulunamadı. Marka/modeli elle yazın; bir sonraki sefer otomatik dolar.";return}
+    if(spec===null){if(solo){msg.textContent="Bu IMEI model veritabanında bulunamadı.";return}if(autoModel&&f.value.trim()==autoModel){f.value="";autoModel=""}msg.textContent="Bu IMEI model veritabanında bulunamadı. Marka/modeli elle yazın; bir sonraki sefer otomatik dolar.";return}
     m=prettyModel(spec);
   }
   const ok=c.length<15||luhn(c);
-  if(canFill()){f.value=m;autoModel=m;msg.textContent="Marka/model otomatik dolduruldu: "+m+(spec?" ("+spec+")":" (önceki kayıtlarınızdan)")+"."}
+  if(solo)msg.textContent="Marka/model: "+m+(spec?" ("+spec+")":" (önceki kayıtlarınızdan)")+".";
+  else if(canFill()){f.value=m;autoModel=m;msg.textContent="Marka/model otomatik dolduruldu: "+m+(spec?" ("+spec+")":" (önceki kayıtlarınızdan)")+"."}
   else msg.textContent="Bu IMEI için bulunan model: "+m+(spec?" ("+spec+")":"")+". Alan dolu olduğu için değiştirilmedi.";
   if(!ok)msg.textContent+=" Uyarı: IMEI doğrulama hanesi uyuşmuyor, kontrol edin.";
 }
@@ -325,7 +334,7 @@ document.addEventListener("input",e=>{
   t.value=f;t._prev=f;try{t.setSelectionRange(i,i)}catch(e){}
 });
 document.addEventListener("input",e=>{if(e.target.id=="f_imei"){const v=e.target.value.replace(/\D/g,"");
-  if(v.length>=8&&(v.slice(0,8)!=lastTac||v.length==15)){lastTac=v.slice(0,8);fillTac(v)}else if(v.length<8)lastTac="";
+  if(v.length>=8&&(v.slice(0,8)!=lastTac||v.length==15)){lastTac=v.slice(0,8);fillTac(v)}else if(v.length<8){lastTac="";if(!$("#f_model")&&$("#imeiMsg"))$("#imeiMsg").textContent=IMEI_HINT}
   edvImeiChanged(v)}});
 document.addEventListener("keydown",e=>{if(e.target.id=="f_edvcode"&&e.key=="Enter"){e.preventDefault();edvSend()}});
 // ---- e-Devlet IMEI kayıt sorgusu ----
@@ -366,6 +375,18 @@ async function edvQuery(imei,code){
 }
 let stream=null,scanTimer=null;
 const luhn=s=>{let t=0;for(let i=0;i<15;i++){let n=+s[14-i];if(i%2){n*=2;if(n>9)n-=9}t+=n}return t%10==0};
+// Panodaki metinden IMEI'yi bulup yazar ("IMEI: 35 601506 ..." gibi metinler, çift SIM'de ilk IMEI)
+const imeiFrom=t=>setImei(t)||setImei(String(t).replace(/\D/g,""));
+async function pasteImei(){
+  const msg=$("#imeiMsg");
+  try{const t=await navigator.clipboard.readText();if(!imeiFrom(t))msg.textContent="Panoda 15 haneli IMEI bulunamadı. Önce IMEI’yi kopyalayın."}
+  catch(e){msg.textContent="Bu tarayıcı panoyu okumaya izin vermedi. IMEI kutusuna basılı tutup Yapıştır’ı seçin."}
+}
+document.addEventListener("paste",e=>{
+  if(e.target.id!="f_imei")return;const t=(e.clipboardData||window.clipboardData)?.getData("text")||"";
+  if(imeiFrom(t)){e.preventDefault();return}
+  const d=t.replace(/\D/g,"");if(d!==t){e.preventDefault();const i=e.target;i.value=(i.value.slice(0,i.selectionStart)+d+i.value.slice(i.selectionEnd)).slice(0,17);i.dispatchEvent(new Event("input",{bubbles:true}))}
+});
 function setImei(v){
   const m=String(v).match(/\d{15}/g)||[];const c=m.find(luhn)||m[0];if(!c)return false;
   $("#f_imei").value=c;$("#imeiMsg").textContent=luhn(c)?"IMEI okundu.":"IMEI okundu ancak doğrulama hanesi uyuşmuyor, lütfen kontrol edin.";lastTac=c.slice(0,8);fillTac(c);edvImeiChanged(c);return true;
