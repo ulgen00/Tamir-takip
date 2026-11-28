@@ -36,8 +36,8 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 /* Ekran açılırken alttan yukarı yumuşak geliş */
 @keyframes sheetIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.sheetbg{animation:fadeIn .25s ease}
-.sheet[role="dialog"]{animation:sheetIn .34s cubic-bezier(.22,.9,.3,1)}
+.sheetbg{animation:fadeIn .4s ease}
+.sheet[role="dialog"]{animation:sheetIn .6s cubic-bezier(.22,.9,.3,1)}
 @media (prefers-reduced-motion:reduce){.sheetbg,.sheet[role="dialog"]{animation:none}}
 .sheet::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-6px auto 6px}
 .sheetx{position:sticky;top:0;float:right;z-index:2;margin:-4px -2px 0 8px;width:44px;height:44px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surf);color:var(--ink);font-size:28px;line-height:1;display:grid;place-items:center;cursor:pointer}
