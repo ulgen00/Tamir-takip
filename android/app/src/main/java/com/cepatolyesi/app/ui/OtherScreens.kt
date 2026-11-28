@@ -286,6 +286,8 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
     val cfg = vm.printer
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
+    if (editing) LabelEditor(vm) { editing = false }
     var ip by remember { mutableStateOf(cfg.ip) }
     var port by remember { mutableStateOf(cfg.port.toString()) }
     var wmm by remember { mutableStateOf(cfg.widthMm.toString()) }
@@ -323,11 +325,12 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
         SwitchRow("Yeni kayıtta otomatik yazdır", "Kaydet’e basınca etiket kendiliğinden basılır.", cfg.autoPrint) { save(vm.printer.copy(autoPrint = it)) }
         SwitchRow("Etiketi 180° çevir", "Etiket ters çıkıyorsa açın.", cfg.rotate) { save(vm.printer.copy(rotate = it)) }
         SwitchRow("Siyah ve beyazı ters çevir", "Zemin siyah, yazılar beyaz çıkıyorsa açın.", cfg.invert) { save(vm.printer.copy(invert = it)) }
+        Button(onClick = { editing = true }, modifier = Modifier.padding(top = 10.dp)) { Text("Etiket tasarımını düzenle") }
+        Text(if (vm.labelTemplate == null) "Şu an hazır tasarım kullanılıyor." else "Şu an sizin tasarımınız kullanılıyor.", style = mutStyle)
         OutlinedButton(enabled = !busy, modifier = Modifier.padding(top = 8.dp), onClick = {
             busy = true
             scope.launch {
-                val sample = com.cepatolyesi.app.Repair("DENEME1", today(), "Deneme Müşteri", "05321234567", "Samsung Galaxy A54", "Ekran değişimi", "", "", 0.0, 0.0, 0, null)
-                val err = LabelPrinter.print(sample, vm.printer)
+                val err = LabelPrinter.print(SAMPLE_REPAIR, vm.printer, vm.currentTemplate())
                 busy = false
                 say(err ?: "Deneme etiketi yazıcıya gönderildi.")
             }

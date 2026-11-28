@@ -1,18 +1,12 @@
 package com.cepatolyesi.app
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Typeface
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.oned.Code128Writer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.net.InetSocketAddress
 import java.net.Socket
-import kotlin.math.roundToInt
 
 /**
  * Ağdaki termal etiket yazıcısı ayarları (Xprinter, Gprinter, HPRT vb. — TSPL dili, ham TCP).
@@ -34,58 +28,9 @@ object LabelPrinter {
     /** Kayda ait kısa numara (etikette ve barkodda) */
     fun jobNo(id: String): String = id.uppercase().filter { it.isLetterOrDigit() }.takeLast(6)
 
-    /**
-     * Etiketi resim olarak çizer (Türkçe karakterler yazıcının yazı tipinden bağımsız çıkar).
-     * Ölçüler 60x30 mm / 203 dpi (480x240 nokta) için tasarlandı, başka boylarda orantılı büyür/küçülür.
-     */
-    fun render(r: Repair, cfg: PrinterCfg): Bitmap {
-        val dpmm = cfg.dpi / 25.4f
-        val w = (cfg.widthMm * dpmm).roundToInt()
-        val h = (cfg.heightMm * dpmm).roundToInt()
-        val s = h / 240f
-        val pad = 12 * s
-        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val c = Canvas(bmp)
-        c.drawColor(Color.WHITE)
-        fun paint(size: Float, bold: Boolean = false) = Paint().apply {
-            color = Color.BLACK; textSize = size * s; isAntiAlias = false
-            typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-        }
-        fun fit(text: String, p: Paint, maxW: Float): String {
-            if (p.measureText(text) <= maxW) return text
-            val n = p.breakText(text, true, maxW - p.measureText("…"), null)
-            return text.take(n).trimEnd() + "…"
-        }
-        val inner = w - 2 * pad
-
-        // Üst satır: dükkan adı ve tarih
-        val head = paint(20f, true); val date = paint(20f)
-        c.drawText("CEP ATÖLYESİ", pad, 26 * s, head)
-        val d = dfmt(r.date)
-        c.drawText(d, w - pad - date.measureText(d), 26 * s, date)
-        c.drawRect(pad, 33 * s, w - pad, 35 * s, Paint().apply { color = Color.BLACK })
-
-        // Müşteri, telefon, cihaz, arıza
-        val name = paint(32f, true)
-        c.drawText(fit(r.name.ifBlank { "-" }, name, inner), pad, 68 * s, name)
-        val phone = paint(26f)
-        c.drawText(fit(fmtPhone(r.phone), phone, inner), pad, 98 * s, phone)
-        val model = paint(26f, true)
-        c.drawText(fit(r.model, model, inner), pad, 128 * s, model)
-        if (r.issue.isNotBlank()) { val issue = paint(22f); c.drawText(fit(r.issue.replace('\n', ' '), issue, inner), pad, 154 * s, issue) }
-
-        // Alt: kayıt numarası barkodu ve numara
-        val no = jobNo(r.id)
-        val top = 166 * s; val bh = 62 * s
-        val m = Code128Writer().encode(no, BarcodeFormat.CODE_128, 0, 0)
-        val mod = maxOf(1, (w * 0.55f / m.width).toInt())
-        val black = Paint().apply { color = Color.BLACK }
-        for (x in 0 until m.width) if (m.get(x, 0)) c.drawRect(pad + x * mod, top, pad + (x + 1) * mod, top + bh, black)
-        val small = paint(18f); val big = paint(34f, true)
-        c.drawText("Kayıt no", w - pad - small.measureText("Kayıt no"), 186 * s, small)
-        c.drawText(no, w - pad - big.measureText(no), 224 * s, big)
-        return bmp
-    }
+    /** Etiketi şablona göre resim olarak çizer (Türkçe karakterler yazıcının yazı tipinden bağımsız çıkar). */
+    fun render(r: Repair, cfg: PrinterCfg, tpl: LabelTemplate? = null): Bitmap =
+        LabelTemplate.render(tpl ?: LabelTemplate.default(cfg.widthMm, cfg.heightMm), r, cfg)
 
     /** TSPL komutu: etiket boyu, boşluk, yön ve 1 bitlik resim (BITMAP), ardından PRINT. */
     fun tspl(bmp: Bitmap, cfg: PrinterCfg, copies: Int = 1): ByteArray {
@@ -135,5 +80,5 @@ object LabelPrinter {
         }
     }
 
-    suspend fun print(r: Repair, cfg: PrinterCfg, copies: Int = 1): String? = send(cfg, tspl(render(r, cfg), cfg, copies))
+    suspend fun print(r: Repair, cfg: PrinterCfg, tpl: LabelTemplate? = null, copies: Int = 1): String? = send(cfg, tspl(render(r, cfg, tpl), cfg, copies))
 }

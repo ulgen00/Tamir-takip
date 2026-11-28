@@ -10,6 +10,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onNodeWithTag
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import com.google.zxing.BinaryBitmap
@@ -103,6 +106,61 @@ class LabelTest {
         val err = LabelPrinter.print(sample, cfg.copy(port = 1))
         assertTrue(err!!.startsWith("Yazıcıya bağlanılamadı (127.0.0.1:1)"))
         assertTrue(LabelPrinter.send(PrinterCfg(), ByteArray(0))!!.contains("IP adresini girin"))
+    }
+
+    @Test fun customTemplate() {
+        val cfg = PrinterCfg(widthMm = 60, heightMm = 30)
+        val t = LabelTemplate(listOf(
+            LabelItem(kind = ItemKind.TEXT, text = "Tel: {telefon}", x = 2f, y = 2f, w = 30f, size = 3f, bold = true),
+            LabelItem(kind = ItemKind.TEXT, text = "{model} · {ucret}", x = 2f, y = 7f, w = 30f, size = 2.5f),
+            LabelItem(kind = ItemKind.BOX, x = 0.5f, y = 0.5f, w = 59f, h = 29f),
+            LabelItem(kind = ItemKind.QR, text = "{telefon}", x = 38f, y = 4f, w = 20f, h = 20f),
+            LabelItem(kind = ItemKind.LINE, x = 2f, y = 12f, w = 30f, h = 0.4f),
+        ))
+        // JSON'a yazıp geri okuyunca aynı
+        assertEquals(t, LabelTemplate.fromJson(t.toJson()))
+        assertEquals("Tel: 0532 123 45 67", LabelTemplate.fill("Tel: {telefon}", sample))
+        val printed = decodeTspl(LabelPrinter.tspl(LabelPrinter.render(sample, cfg, t), cfg))
+        savePng(printed, "35-ozel-tasarim")
+        assertEquals("0532 123 45 67", readBarcode(printed))   // QR kod telefonu veriyor
+        // Hazır tasarım başka boyda da kayıt no barkodunu taşıyor
+        val big = PrinterCfg(widthMm = 80, heightMm = 40)
+        assertEquals("ABQ7XZ", readBarcode(decodeTspl(LabelPrinter.tspl(LabelPrinter.render(sample, big), big))))
+    }
+
+    @Test fun editorFlow() {
+        val vm = androidx.lifecycle.ViewModelProvider(rule.activity)[AppViewModel::class.java]
+        rule.runOnUiThread { vm.updateNav(NavMode.DRAWER); vm.updateTemplate(null) }
+        rule.onNodeWithContentDescription("Seçenekler").performClick(); rule.onNodeWithText("Ayarlar").performClick()
+        rule.onNodeWithText("Etiket tasarımını düzenle").performScrollTo().performClick()
+        rule.waitForIdle(); captureScreenRoboImage("build/ekranlar/36-tasarim-ekrani.png")
+
+        // Yeni yazı ekle ve içeriğini değiştir
+        rule.onNodeWithText("+ Yazı").performClick()
+        rule.onNode(hasText("Yeni yazı") and hasSetTextAction()).performTextReplacement("Garanti 3 ay")
+        rule.waitForIdle()
+        val item = vm.labelTemplate!!.items.last()
+        assertEquals("Garanti 3 ay", item.text)
+
+        // Önizlemede sürükleyerek taşı (sağa ve yukarı)
+        rule.onNodeWithTag("etiket-onizleme").performTouchInput {
+            val pxmm = width / 60f
+            val start = androidx.compose.ui.geometry.Offset((item.x + 5f) * pxmm, (item.y + 1f) * pxmm)
+            down(start); moveBy(androidx.compose.ui.geometry.Offset(8 * pxmm, 0f)); moveBy(androidx.compose.ui.geometry.Offset(8 * pxmm, -6 * pxmm)); up()
+        }
+        rule.waitForIdle()
+        val moved = vm.labelTemplate!!.items.first { it.id == item.id }
+        assertTrue("x ${item.x} -> ${moved.x}", moved.x > item.x + 10f)
+        assertTrue("y ${item.y} -> ${moved.y}", moved.y < item.y - 3f)
+        captureScreenRoboImage("build/ekranlar/37-tasarim-yazi-eklendi.png")
+
+        // Basılan etikette yeni yazı var (kendi tasarımı kullanılıyor)
+        assertTrue(vm.currentTemplate().items.any { it.text == "Garanti 3 ay" })
+
+        // Varsayılana dön
+        rule.onNodeWithText("Varsayılana dön").performScrollTo().performClick()
+        rule.onNodeWithText("Evet").performClick(); rule.waitForIdle()
+        assertNull(vm.labelTemplate)
     }
 
     @Test fun printFromForm() {

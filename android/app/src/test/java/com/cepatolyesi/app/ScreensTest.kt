@@ -97,12 +97,13 @@ class ScreensTest {
         rule.runOnUiThread { androidx.lifecycle.ViewModelProvider(rule.activity)[AppViewModel::class.java].updateNav(NavMode.DRAWER) }
         rule.onNodeWithContentDescription("Seçenekler").performClick(); rule.onNodeWithText("IMEI Sorgula").performClick()
         field(0).performTextInput("356015060194519")
-        // Gerçek e-Devlet sorgusu (Worker üzerinden); internet yoksa hata mesajı görünür
-        rule.waitUntil(40_000) {
-            rule.onAllNodes(hasText("e-Devlet IMEI kaydı")).fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodes(hasText("Tekrar dene")).fetchSemanticsNodes().isNotEmpty()
-        }
+        // Gerçek e-Devlet sorgusu (Worker üzerinden). Olası sonuçlar: kayıt kartı, doğrulama kodu ekranı ya da anlık hata
+        fun has(t: String) = rule.onAllNodes(hasText(t)).fetchSemanticsNodes().isNotEmpty()
+        fun done() = has("e-Devlet IMEI kaydı") || has("e-Devlet doğrulama kodu istiyor") || has("Tekrar dene")
+        rule.waitUntil(60_000) { done() }
+        if (has("Tekrar dene")) { rule.onNodeWithText("Tekrar dene").performClick(); rule.waitUntil(60_000) { has("e-Devlet IMEI kaydı") || has("e-Devlet doğrulama kodu istiyor") } }
         shot("20-imei-edevlet")
-        rule.onNodeWithText("Kapalı").assertExists()
+        if (has("e-Devlet IMEI kaydı")) rule.onNodeWithText("Kapalı").assertExists()
+        else rule.onNodeWithText("Gönder").assertExists()   // doğrulama kodu kutusu ve resmi
     }
 }

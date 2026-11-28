@@ -44,10 +44,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             .putInt("yz_bosluk", c.gapMm).putBoolean("yz_cevir", c.rotate).putBoolean("yz_ters", c.invert).putBoolean("yz_oto", c.autoPrint).apply()
     }
 
+    /** Kullanıcının etiket tasarımı; null ise hazır tasarım (etiket boyuna göre) */
+    var labelTemplate by mutableStateOf(prefs.getString("etiket_sablon", null)?.let { runCatching { LabelTemplate.fromJson(it) }.getOrNull() })
+        private set
+    fun updateTemplate(t: LabelTemplate?) {
+        labelTemplate = t
+        prefs.edit().apply { if (t == null) remove("etiket_sablon") else putString("etiket_sablon", t.toJson()) }.apply()
+    }
+    /** Düzenlenecek/basılacak şablon */
+    fun currentTemplate(): LabelTemplate = labelTemplate ?: LabelTemplate.default(printer.widthMm, printer.heightMm)
+
     /** Etiketi yazıcıya gönderir; sonuç mesajı ana iş parçacığında döner. Form kapansa da devam eder. */
     fun printLabel(r: Repair, onDone: (String) -> Unit) {
         val cfg = printer
-        viewModelScope.launch { onDone(LabelPrinter.print(r, cfg) ?: "Etiket yazıcıya gönderildi.") }
+        val tpl = currentTemplate()
+        viewModelScope.launch { onDone(LabelPrinter.print(r, cfg, tpl) ?: "Etiket yazıcıya gönderildi.") }
     }
 
     fun updateTheme(t: ThemeMode) { theme = t; prefs.edit().putString("tema", t.name).apply() }
