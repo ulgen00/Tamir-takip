@@ -97,7 +97,7 @@ function ask(msg,only){return new Promise(res=>{const d=document.createElement("
 const say=m=>ask(m,true);
 
 function render(){
-  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["imei","IMEI Sorgula"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
+  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"],["imei","IMEI Sorgula"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
   $("#fab").style.display=view=="sum"||view=="imei"?"none":"block";
   $("#app").innerHTML=view=="repairs"?vRepairs():view=="imei"?vImei():view=="cash"?vCash():vSum();
 }
