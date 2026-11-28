@@ -56,12 +56,14 @@ display:flex;flex-direction:column;gap:4px;transform:translateX(-100%);visibilit
 .drawer .dhead button{flex:none;width:44px;min-height:44px;padding:0;justify-content:center;font-size:26px;line-height:1;color:var(--mut)}
 .drawer button{font:inherit;text-align:left;background:none;border:0;color:var(--ink);padding:12px;border-radius:10px;min-height:50px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .drawer button.on{background:var(--b1);color:var(--c1);font-weight:700}
-.dsep{height:1px;background:var(--line);margin:8px 4px}
+.themesw{margin-left:auto;flex:none;display:flex;gap:2px;padding:3px;border:1px solid var(--line);background:var(--surf);border-radius:99px}
+.themesw button{width:40px;height:38px;padding:0;border:0;border-radius:99px;background:none;color:var(--mut);display:grid;place-items:center;cursor:pointer}
+.themesw button[aria-pressed="true"]{background:var(--acc);color:var(--accink)}
 @media (prefers-reduced-motion:reduce){.drawer,.drawerbg{transition:none}}
 </style>
 </head>
 <body>
-<header class="top"><button class="menubtn" id="menuBtn" data-menu aria-label="Seçenekler" aria-expanded="false" aria-controls="drawer"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button><span class="brand">Cep Atölyesi</span></header>
+<header class="top"><button class="menubtn" id="menuBtn" data-menu aria-label="Seçenekler" aria-expanded="false" aria-controls="drawer"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button><span class="brand">Cep Atölyesi</span><div class="themesw" role="group" aria-label="Tema"><button data-themeset="light" aria-label="Açık tema" title="Açık tema"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button data-themeset="dark" aria-label="Koyu tema" title="Koyu tema"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z" fill="currentColor"/></svg></button></div></header>
 <main id="app"></main>
 <button class="fab" id="fab" aria-label="Yeni kayıt ekle">+</button>
 <div class="drawerbg" id="drawerbg"></div>
@@ -86,7 +88,7 @@ function ask(msg,only){return new Promise(res=>{const d=document.createElement("
 const say=m=>ask(m,true);
 
 function render(){
-  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join("")+`<div class="dsep"></div><button data-themebtn><span>Tema</span><span class="mut">${themeLabel()}</span></button>`;
+  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
   $("#fab").style.display=view=="sum"?"none":"block";
   $("#app").innerHTML=view=="repairs"?vRepairs():view=="cash"?vCash():vSum();
 }
@@ -171,7 +173,6 @@ document.addEventListener("click",async e=>{
   else if(d.r)repairForm(d.r);
   else if(d.t)txForm(d.t);
   else if(b.id=="fab")view=="repairs"?repairForm():txForm();
-  else if(d.themebtn!==undefined){closeMenu();themeSheet()}
   else if(d.themeset)setTheme(d.themeset);
   else if(d.egov!==undefined)copyImei();
   else if(d.scan!==undefined)startScan();
@@ -209,10 +210,12 @@ document.addEventListener("click",async e=>{
 $("#drawerbg").addEventListener("click",closeMenu);
 document.addEventListener("keydown",e=>{if(e.key=="Escape"&&closeMenu())$("#menuBtn").focus()});
 let theme="auto";try{theme=localStorage.getItem("tamir-tema")||"auto"}catch(e){}
-function applyTheme(){const r=document.documentElement;theme=="auto"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",theme)}
-const themeLabel=()=>({auto:"Otomatik",light:"Açık",dark:"Koyu"})[theme];
-function themeSheet(){sheet(`<h1>Tema</h1>${[["auto","Otomatik","Telefonun ayarını takip eder"],["dark","Koyu","Her zaman karanlık mod"],["light","Açık","Her zaman aydınlık mod"]].map(([k,t,d])=>`<button class="card item" data-themeset="${k}"><div class="row sp"><span class="b">${t}</span>${theme==k?'<span class="chip s2">Seçili</span>':""}</div><div class="mut">${d}</div></button>`).join("")}<div class="row" style="margin-top:8px"><button class="btn" data-close>Kapat</button></div>`)}
-function setTheme(k){theme=k;try{localStorage.setItem("tamir-tema",theme)}catch(e){}applyTheme();closeSheet();render()}
+// Sağ üstteki güneş/ay düğmeleri: seçilene kadar telefonun ayarı takip edilir, seçilen düğme vurgulanır.
+const effTheme=()=>theme=="auto"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):theme;
+function applyTheme(){const r=document.documentElement;theme=="auto"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",theme);
+  const e=effTheme();document.querySelectorAll(".themesw [data-themeset]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.themeset==e))}
+try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme)}catch(e){}
+function setTheme(k){theme=k;try{localStorage.setItem("tamir-tema",theme)}catch(e){}applyTheme()}
 applyTheme();
 // ---- IMEI -> marka/model otomatik doldurma ----
 // IMEI'nin ilk 8 hanesi (TAC) cihaz modelini belirtir. Sıra: 1) bu dükkanda daha önce
