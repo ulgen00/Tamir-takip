@@ -22,6 +22,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -39,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -62,6 +65,7 @@ import com.cepatolyesi.app.ImeiState
 import com.cepatolyesi.app.LabelPrinter
 import com.cepatolyesi.app.NavMode
 import com.cepatolyesi.app.PrinterCfg
+import com.cepatolyesi.app.PrinterScan
 import com.cepatolyesi.app.STATUSES
 import com.cepatolyesi.app.Tx
 import com.cepatolyesi.app.amountText
@@ -287,6 +291,11 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
+    var scanning by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0f) }
+    var found by remember { mutableStateOf(emptyList<PrinterScan.Found>()) }
+    var scanMsg by remember { mutableStateOf("") }
+    val ctx = LocalContext.current
     if (editing) LabelEditor(vm) { editing = false }
     var ip by remember { mutableStateOf(cfg.ip) }
     var port by remember { mutableStateOf(cfg.port.toString()) }
@@ -310,6 +319,25 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
             Column(Modifier.weight(1f)) {
                 Label("Port")
                 OutlinedTextField(port, { port = it.filter(Char::isDigit); save() }, singleLine = true, colors = fieldColors(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            }
+        }
+        // Ağda yazıcı bulma
+        OutlinedButton(enabled = !scanning, modifier = Modifier.padding(top = 8.dp), onClick = {
+            scanning = true; found = emptyList(); scanMsg = ""; progress = 0f
+            scope.launch {
+                val (list, m) = PrinterScan.findPrinters(ctx) { d, t -> progress = d.toFloat() / t }
+                found = list; scanMsg = m; scanning = false
+            }
+        }) { Icon(Icons.Filled.Search, null, Modifier.padding(end = 6.dp)); Text(if (scanning) "Ağ taranıyor…" else "Ağda yazıcı ara") }
+        if (scanning) LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+        if (scanMsg.isNotEmpty()) Text(scanMsg, style = mutStyle, modifier = Modifier.padding(top = 6.dp))
+        found.forEach { f ->
+            val chosen = f.ip == ip.trim() && f.port.toString() == port
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Print, null, Modifier.padding(end = 8.dp))
+                Column(Modifier.weight(1f)) { Text(f.ip, fontWeight = FontWeight.Bold); Text("Port ${f.port}", style = mutStyle) }
+                if (chosen) Pill("Seçili", LocalColors.current.st[2].first, LocalColors.current.st[2].second)
+                else OutlinedButton(onClick = { ip = f.ip; port = f.port.toString(); save() }) { Text("Seç") }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

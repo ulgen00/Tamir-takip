@@ -53,7 +53,7 @@ kesin kayıt değildir.
 
 ## Android uygulaması (APK)
 
-`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.2).
+`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.3).
 Siteye bağlı değildir; internetsiz çalışır (internet yalnızca e-Devlet IMEI sorgusu için gerekir).
 Geliştirmeye bu uygulama üzerinden devam ediliyor; iPhone için web sürümü (`index.html`) kullanılmaya devam ediyor.
 
@@ -67,6 +67,8 @@ Geliştirmeye bu uygulama üzerinden devam ediliyor; iPhone için web sürümü 
   "Etiket yazdır" düğmesiyle ya da yeni kayıtta otomatik. Etiket (varsayılan 60x30 mm) uygulamada resim olarak çizilir
   (Türkçe karakterler için) ve BITMAP komutuyla gönderilir: dükkan adı, tarih, müşteri, telefon, model, arıza,
   kayıt no ve barkodu. Yazıcı IP'si, boyut, 180° çevirme ve ters renk Ayarlar'da (`Label.kt`).
+- Ağda yazıcı arama (Ayarlar > Ağda yazıcı ara): telefonun bağlı olduğu ağın /24 bölümündeki adreslerde 9100
+  portu açık cihazları listeler, dokununca IP ayarlanır. Yazıcıya komut göndermez (`PrinterScan.kt`).
 - Etiket tasarımı (Ayarlar > Etiket tasarımını düzenle): yazı, barkod, QR kod, çizgi ve kutu eklenir; önizlemede
   dokunarak seçilir, sürükleyerek taşınır; yazı boyu, kalınlık, hizalama, boyut ve konum ayarlanır. Yazılarda
   `{ad}`, `{telefon}`, `{model}`, `{ariza}`, `{imei}`, `{tarih}`, `{kayitno}`, `{ucret}`, `{durum}`, `{toptanci}`
