@@ -33,6 +33,13 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+/* Onay/uyarı kutusu: ekranın ortasında */
+.askbox{background:var(--bg);width:min(340px,calc(100% - 32px));max-height:80%;overflow:auto;margin:auto;border-radius:18px;padding:22px 18px 18px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,.35);animation:popIn .2s ease}
+.askbox p{margin:0 0 18px;font-size:18px;line-height:1.35}
+.askbox .row{justify-content:center}
+.askbox .btn{min-width:110px}
+@keyframes popIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.askbox{animation:none}}
 /* Ekran açılırken alttan yukarı yumuşak geliş */
 @keyframes sheetIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -91,7 +98,7 @@ const dfmt=d=>d?d.split("-").reverse().join("."):"";
 const $=s=>document.querySelector(s);
 // Sayfa içi onay kutusu (tarayıcının confirm/alert pencereleri bazı ortamlarda çalışmıyor)
 function ask(msg,only){return new Promise(res=>{const d=document.createElement("div");d.className="sheetbg";d.style.zIndex=40;d.style.alignItems="center";
-  d.innerHTML=`<div class="sheet" role="alertdialog" aria-modal="true" style="border-radius:16px;margin:16px"><p style="margin-top:0">${esc(msg)}</p><div class="row"><button class="btn p" data-ok>${only?"Tamam":"Evet"}</button>${only?"":'<button class="btn" data-no>Vazgeç</button>'}</div></div>`;
+  d.innerHTML=`<div class="askbox" role="alertdialog" aria-modal="true"><p>${esc(msg)}</p><div class="row"><button class="btn p" data-ok>${only?"Tamam":"Evet"}</button>${only?"":'<button class="btn" data-no>Vazgeç</button>'}</div></div>`;
   d.querySelector("[data-ok]").onclick=e=>{e.stopPropagation();d.remove();res(true)};const n=d.querySelector("[data-no]");if(n)n.onclick=e=>{e.stopPropagation();d.remove();res(false)};
   document.body.appendChild(d);d.querySelector("[data-ok]").focus()})}
 const say=m=>ask(m,true);
@@ -338,6 +345,8 @@ document.addEventListener("input",e=>{
   // Sadece bir boşluk silindiyse, önündeki rakamı da sil (yoksa silme tuşu takılı kalır)
   if(e.inputType=="deleteContentBackward"&&v.replace(/\D/g,"")==prev.replace(/\D/g,"")&&pos>0){v=v.slice(0,pos-1)+v.slice(pos);pos--}
   if(v&&!/^[0+]/.test(v)){v="0"+v;pos++}
+  // Otomatik gelen 0'dan sonra numara yine 0 ile yazılırsa çift sıfırı teke indir
+  if(/^00/.test(v)){const n=v.match(/^0+/)[0].length-1;v=v.slice(n);pos=Math.max(1,pos-n)}
   const keep=v.slice(0,pos).replace(/\s/g,"").length,f=fmtPhone(v);
   let i=0,n=0;while(i<f.length&&n<keep){if(f[i]!=" ")n++;i++}
   t.value=f;t._prev=f;try{t.setSelectionRange(i,i)}catch(e){}
