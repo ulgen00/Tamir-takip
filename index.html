@@ -33,6 +33,14 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+/* Alt çubuk (Ayarlar'dan seçilirse) */
+nav.bbar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surf);border-top:1px solid var(--line);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+nav.bbar button{flex:1;min-width:0;font:inherit;font-size:13px;background:none;border:0;color:var(--mut);padding:10px 2px;min-height:54px;cursor:pointer}
+nav.bbar button.on{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var(--acc)}
+body.nav-bottom nav.bbar{display:flex}
+body.nav-bottom .menubtn{display:none}
+body.nav-bottom .fab{bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+body.nav-bottom main{padding-bottom:150px}
 /* Onay/uyarı kutusu: ekranın ortasında */
 .askbox{background:var(--bg);width:min(340px,calc(100% - 32px));max-height:80%;overflow:auto;margin:auto;border-radius:18px;padding:22px 18px 18px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,.35);animation:popIn .2s ease}
 .askbox p{margin:0 0 18px;font-size:18px;line-height:1.35}
@@ -82,6 +90,7 @@ display:flex;flex-direction:column;gap:4px;transform:translateX(-100%);visibilit
 <header class="top"><button class="menubtn" id="menuBtn" data-menu aria-label="Seçenekler" aria-expanded="false" aria-controls="drawer"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button><span class="brand">Cep Atölyesi</span><div class="themesw" role="group" aria-label="Tema"><button data-themeset="light" aria-label="Açık tema" title="Açık tema"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button><button data-themeset="dark" aria-label="Koyu tema" title="Koyu tema"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z" fill="currentColor"/></svg></button></div></header>
 <main id="app"></main>
 <button class="fab" id="fab" aria-label="Yeni kayıt ekle">+</button>
+<nav class="bbar" id="bbar" aria-label="Sekmeler"></nav>
 <div class="drawerbg" id="drawerbg"></div>
 <aside class="drawer" id="drawer" aria-label="Seçenekler" aria-hidden="true"><div class="dhead"><span>Seçenekler</span><button data-menuclose aria-label="Menüyü kapat">×</button></div><div id="drawerNav" style="display:flex;flex-direction:column;gap:4px"></div></aside>
 <script>
@@ -104,9 +113,22 @@ function ask(msg,only){return new Promise(res=>{const d=document.createElement("
 const say=m=>ask(m,true);
 
 function render(){
-  $("#drawerNav").innerHTML=[["repairs","Tamir"],["cash","Kasa"],["sum","Özet"],["imei","IMEI Sorgula"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
-  $("#fab").style.display=view=="sum"||view=="imei"?"none":"block";
-  $("#app").innerHTML=view=="repairs"?vRepairs():view=="imei"?vImei():view=="cash"?vCash():vSum();
+  const tab=(k,t)=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`;
+  $("#drawerNav").innerHTML=NAV.map(([k,t])=>tab(k,t)).join("");
+  $("#bbar").innerHTML=NAV.map(([k,t,kisa])=>tab(k,kisa||t)).join("");
+  $("#fab").style.display=view=="repairs"||view=="cash"?"block":"none";
+  $("#app").innerHTML=view=="repairs"?vRepairs():view=="imei"?vImei():view=="settings"?vSettings():view=="cash"?vCash():vSum();
+}
+const NAV=[["repairs","Tamir"],["cash","Kasa"],["sum","Özet"],["imei","IMEI Sorgula","IMEI"],["settings","Ayarlar"]];
+// Gezinme biçimi: "drawer" (sol üstteki menü) ya da "bottom" (alt çubuk)
+let navMode="drawer";try{navMode=localStorage.getItem("tamir-gezinme")||"drawer"}catch(e){}
+const applyNav=()=>document.body.classList.toggle("nav-bottom",navMode=="bottom");
+function setNav(k){navMode=k;try{localStorage.setItem("tamir-gezinme",k)}catch(e){}applyNav();closeMenu();render()}
+function vSettings(){
+  const opt=(k,t,d)=>`<button class="card item" data-navset="${k}" aria-pressed="${navMode==k}"><div class="row sp"><span class="b">${t}</span>${navMode==k?'<span class="chip s2">Seçili</span>':""}</div><div class="mut">${d}</div></button>`;
+  return `<h1>Ayarlar</h1><div class="b" style="margin:4px 0 8px">Sekmelerin yeri</div>
+  ${opt("drawer","Soldan menü","Sol üstteki ☰ düğmesiyle ya da ekranın sol kenarından sağa kaydırarak açılır.")}
+  ${opt("bottom","Alt çubuk","Sekmeler ekranın altında, her zaman görünür.")}`;
 }
 function vRepairs(){
   const counts=ST.map((_,i)=>db.repairs.filter(r=>r.st==i).length);
@@ -214,6 +236,7 @@ document.addEventListener("click",async e=>{
   else if(d.t)txForm(d.t);
   else if(b.id=="fab")view=="repairs"?repairForm():txForm();
   else if(d.themeset)setTheme(d.themeset);
+  else if(d.navset)setNav(d.navset);
   else if(d.pasteimei!==undefined)pasteImei();
   else if(d.scan!==undefined)startScan();
   else if(d.stopscan!==undefined)stopScan();
@@ -256,7 +279,7 @@ $("#drawerbg").addEventListener("click",closeMenu);
   const clear=()=>{for(const el of [dr,bg])el.style.transition=el.style.transform=el.style.visibility=el.style.opacity=el.style.pointerEvents="";drag=false;x0=null};
   document.addEventListener("touchstart",e=>{
     x0=null;if(e.touches.length!=1||$("#sh")||$("#scan"))return;
-    const t=e.touches[0];if(!dr.classList.contains("open")&&t.clientX>28)return;
+    const t=e.touches[0];if(!dr.classList.contains("open")&&(t.clientX>28||navMode=="bottom"))return;
     x0=t.clientX;y0=t.clientY;dx=0;drag=false;w=dr.offsetWidth;
   },{passive:true});
   document.addEventListener("touchmove",e=>{
@@ -428,7 +451,7 @@ function photoScan(){
     catch(e){$("#imeiMsg").textContent="Fotoğraf okunamadı. IMEI’yi elle yazın."}};
   i.click();
 }
-render();
+applyNav();render();
 </script>
 </body>
 </html>
