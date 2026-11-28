@@ -6,12 +6,12 @@
 <title>Tamir Defteri</title>
 <style>
 :root{--bg:#F3EBDD;--surf:#FBF6EC;--ink:#3B2A1E;--mut:#7A6555;--line:#E0D3BF;--acc:#7A4A2A;--accink:#FFF8EE;--in:#3F7A3A;--out:#A8392B;
---c0:#8A5A00;--b0:#F4E2C0;--c1:#7A4A2A;--b1:#EBDCC8;--c2:#3F7A3A;--b2:#DDEBD3;--c3:#7A6555;--b3:#E8DFD2;
+--c0:#8A5A00;--b0:#F4E2C0;--c1:#7A4A2A;--b1:#EBDCC8;--c2:#3F7A3A;--b2:#DDEBD3;--c3:#7A6555;--b3:#E8DFD2;--bo:#F6DCD7;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1E1712;--surf:#2A211A;--ink:#F1E6D6;--mut:#B5A28E;--line:#3D3127;--acc:#D9A877;--accink:#24180E;--in:#8FCB86;--out:#F09080;
---c0:#F0C36B;--b0:#3A2C12;--c1:#D9A877;--b1:#3D2C1C;--c2:#8FCB86;--b2:#22351F;--c3:#B5A28E;--b3:#332A22;color-scheme:dark}}
+--c0:#F0C36B;--b0:#3A2C12;--c1:#D9A877;--b1:#3D2C1C;--c2:#8FCB86;--b2:#22351F;--c3:#B5A28E;--b3:#332A22;--bo:#3D1F1B;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#1E1712;--surf:#2A211A;--ink:#F1E6D6;--mut:#B5A28E;--line:#3D3127;--acc:#D9A877;--accink:#24180E;--in:#8FCB86;--out:#F09080;
---c0:#F0C36B;--b0:#3A2C12;--c1:#D9A877;--b1:#3D2C1C;--c2:#8FCB86;--b2:#22351F;--c3:#B5A28E;--b3:#332A22;color-scheme:dark}
+--c0:#F0C36B;--b0:#3A2C12;--c1:#D9A877;--b1:#3D2C1C;--c2:#8FCB86;--b2:#22351F;--c3:#B5A28E;--b3:#332A22;--bo:#3D1F1B;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 "Times New Roman",Times,"Liberation Serif",serif}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -23,7 +23,7 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .item{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
 .mut{color:var(--mut);font-size:14px}.b{font-weight:650}
 .chip{display:inline-block;font-size:13px;font-weight:600;padding:2px 9px;border-radius:99px}
-.s0{color:var(--c0);background:var(--b0)}.s1{color:var(--c1);background:var(--b1)}.s2{color:var(--c2);background:var(--b2)}.s3{color:var(--c3);background:var(--b3)}
+.s0{color:var(--c0);background:var(--b0)}.s1{color:var(--c1);background:var(--b1)}.s2{color:var(--c2);background:var(--b2)}.s3{color:var(--c3);background:var(--b3)}.s4{color:var(--out);background:var(--bo)}
 .in{color:var(--in)}.out{color:var(--out)}
 .tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
 .tabs button,.btn{font:inherit;border:1px solid var(--line);background:var(--surf);color:var(--ink);border-radius:99px;padding:8px 14px;min-height:44px;cursor:pointer;white-space:nowrap}
@@ -84,7 +84,7 @@ function vRepairs(){
   return `<h1>Tamire gelen cihazlar</h1>
   <div class="tabs"><button class="${flt=="all"?"on":""}" data-f="all">Hepsi ${db.repairs.length}</button>${ST.map((s,i)=>`<button class="${flt==i?"on":""}" data-f="${i}">${s} ${counts[i]}</button>`).join("")}</div>
   ${list.length?list.map(r=>`<button class="card item" data-r="${r.id}"><div class="row sp"><span class="b">${esc(r.model)}</span><span class="chip s${r.st}">${ST[r.st]}</span></div>
-  <div class="mut">${esc(r.name)}${r.phone?" · "+esc(r.phone):""}</div><div class="mut">${esc(r.issue)}</div>${r.imei?`<div class="mut">IMEI ${esc(r.imei)}</div>`:""}
+  <div class="mut">${esc(r.name)}${r.phone?" · "+esc(r.phone):""}</div><div class="mut">${esc(r.issue)}</div>${r.imei?`<div class="mut">IMEI ${esc(r.imei)}${r.edv?" "+edvChip(r.edv):""}</div>`:""}
   <div class="row sp" style="margin-top:6px"><span class="mut">${dfmt(r.date)}</span><span class="b">${money(r.price)}</span></div></button>`).join(""):`<div class="empty">Henüz cihaz yok. Sağ alttaki + ile ilk cihazı kaydedin.</div>`}`;
 }
 function vCash(){
@@ -118,12 +118,12 @@ function closeSheet(){const s=$("#sh");if(s)s.remove()}
 const val=id=>$("#"+id).value.trim();
 
 function repairForm(id){
-  const r=db.repairs.find(x=>x.id==id)||{};autoModel="";lastTac="";tacIndex();
+  const r=db.repairs.find(x=>x.id==id)||{};autoModel="";curEdv=r.edv||null;edvFor=r.edv?r.imei:"";edvState=null;lastTac="";tacIndex();
   sheet(`<h1>${id?"Cihaz detayı":"Yeni cihaz"}</h1>
   <label>Müşteri adı</label><input id="f_name" value="${esc(r.name)}">
   <label>Telefon numarası</label><input id="f_phone" type="tel" inputmode="tel" value="${esc(r.phone)}">
   <label>Cihaz (marka / model)</label><input id="f_model" value="${esc(r.model)}" placeholder="Örn. Samsung A54">
-  <label>IMEI</label><div class="row"><input id="f_imei" inputmode="numeric" maxlength="17" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><button class="btn" type="button" data-scan>Barkod tara</button></div><a class="btn" href="https://www.turkiye.gov.tr/imei-sorgulama" target="_blank" rel="noopener" data-egov style="display:inline-block;margin-top:8px">e-Devlet’te marka/model sorgula</a><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div>
+  <label>IMEI</label><div class="row"><input id="f_imei" inputmode="numeric" maxlength="17" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><button class="btn" type="button" data-scan>Barkod tara</button></div><a class="btn" href="https://www.turkiye.gov.tr/imei-sorgulama" target="_blank" rel="noopener" data-egov style="display:inline-block;margin-top:8px">e-Devlet’te marka/model sorgula</a><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
   <label>Arıza / yapılacak iş</label><textarea id="f_issue" rows="2">${esc(r.issue)}</textarea>
   <div class="g2"><div><label>Ücret (₺)</label><input id="f_price" type="number" inputmode="decimal" value="${r.price??""}"></div><div><label>Parça maliyeti (₺)</label><input id="f_cost" type="number" inputmode="decimal" value="${r.cost??""}"></div></div>
   <label>Parçanın alındığı toptancı</label><input id="f_sup" list="suplist" value="${esc(r.sup)}" placeholder="Örn. Ahmet Telekom"><datalist id="suplist">${[...new Set(db.repairs.map(x=>x.sup).filter(Boolean))].map(s=>`<option value="${esc(s)}">`).join("")}</datalist>
@@ -159,11 +159,15 @@ document.addEventListener("click",async e=>{
   else if(d.egov!==undefined)copyImei();
   else if(d.scan!==undefined)startScan();
   else if(d.stopscan!==undefined)stopScan();
+  else if(d.edvq!==undefined)edvQuery();
+  else if(d.edvsend!==undefined)edvSend();
   else if(d.close!==undefined)closeSheet();
   else if(d.tt){$("#f_type").value=d.tt;b.parentNode.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x==b));$("#f_cat").innerHTML=catOpts(d.tt)}
   else if(d.saveR!==undefined){
     if(!val("f_model")){await say("Cihaz modelini yazın.");return}
     const o={name:val("f_name"),phone:val("f_phone"),model:val("f_model"),issue:val("f_issue"),imei:val("f_imei"),sup:val("f_sup"),price:+val("f_price")||0,cost:+val("f_cost")||0,st:+$("#f_st").value};
+    const prev=d.saveR?db.repairs.find(x=>x.id==d.saveR):null;
+    o.edv=curEdv&&curEdv.imei==o.imei?curEdv:(prev&&prev.imei==o.imei&&prev.edv)||null;
     if(o.imei.length>=8&&o.model){db.tac=db.tac||{};db.tac[o.imei.slice(0,8)]=o.model}
     if(d.saveR){Object.assign(db.repairs.find(x=>x.id==d.saveR),o)}else db.repairs.push({id:uid(),date:today(),...o});
     save();closeSheet();render();
@@ -237,12 +241,50 @@ async function fillTac(c){
 function copyImei(){const v=$("#f_imei").value.replace(/\D/g,"");if(v.length>=8){try{navigator.clipboard.writeText(v)}catch(e){}$("#imeiMsg").textContent="IMEI kopyalandı. Açılan sayfaya yapıştırın, sonra marka/modeli buraya yazın."}}
 let lastTac="";
 document.addEventListener("input",e=>{if(e.target.id=="f_imei"){const v=e.target.value.replace(/\D/g,"");
-  if(v.length>=8&&(v.slice(0,8)!=lastTac||v.length==15)){lastTac=v.slice(0,8);fillTac(v)}else if(v.length<8)lastTac=""}});
+  if(v.length>=8&&(v.slice(0,8)!=lastTac||v.length==15)){lastTac=v.slice(0,8);fillTac(v)}else if(v.length<8)lastTac="";
+  edvImeiChanged(v)}});
+document.addEventListener("keydown",e=>{if(e.target.id=="f_edvcode"&&e.key=="Enter"){e.preventDefault();edvSend()}});
+// ---- e-Devlet IMEI kayıt sorgusu ----
+// Sorgu, worker/imei-worker.js ile kurulan Cloudflare Worker üzerinden yapılır (tarayıcı
+// e-Devlet'e doğrudan bağlanamaz). Adres boşsa bu özellik gizlenir.
+const EDV_API="https://cep-atolyesi-imei.hvt8b9y5zt.workers.dev";
+let curEdv=null,edvFor="",edvState=null;
+const EDV_L={kayitli:["Kayıtlı","s2"],kayitsiz:["Kayıtsız","s4"],kapali:["Kapalı","s4"],bilinmiyor:["Durum","s3"]};
+const edvChip=e=>e&&EDV_L[e.sinif]?`<span class="chip ${EDV_L[e.sinif][1]}">${EDV_L[e.sinif][0]}</span>`:"";
+function edvHtml(e){
+  if(!e)return EDV_API?`<button class="btn" type="button" data-edvq style="margin-top:8px">e-Devlet kaydını sorgula</button>`:"";
+  return `<div class="card" style="margin:8px 0 0"><div class="row sp"><span class="b">e-Devlet IMEI kaydı</span>${edvChip(e)}</div><div class="mut">${esc(e.durum)}</div>${e.kaynak?`<div class="mut">Kaynak: ${esc(e.kaynak)}</div>`:""}${e.model?`<div class="mut">${esc(e.model)}</div>`:""}
+  <div class="row sp" style="margin-top:6px"><span class="mut">Sorgu tarihi: ${esc(e.tarih)}</span>${EDV_API?`<button class="btn" type="button" data-edvq>Yenile</button>`:""}</div></div>`;
+}
+const edvBox=h=>{const b=$("#edv");if(b)b.innerHTML=h};
+function edvImeiChanged(v){
+  if(curEdv&&curEdv.imei!=v){curEdv=null;edvFor="";edvBox(edvHtml(null))}
+  if(EDV_API&&v.length==15&&luhn(v)&&v!=edvFor)edvQuery(v);
+}
+function edvSend(){const c=$("#f_edvcode")?.value.trim();if(c)edvQuery(edvFor,c)}
+async function edvQuery(imei,code){
+  if(!EDV_API)return;imei=imei||$("#f_imei").value.replace(/\D/g,"");
+  if(imei.length!=15){edvBox(`<div class="mut" style="margin-top:8px">e-Devlet sorgusu için 15 haneli IMEI gerekli.</div>`);return}
+  edvFor=imei;edvBox(`<div class="mut" style="margin-top:8px">e-Devlet’te sorgulanıyor…</div>`);
+  let j;
+  try{const r=await fetch(EDV_API.replace(/\/$/,"")+"/sorgu",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(code?{imei,state:edvState,code}:{imei})});j=await r.json()}
+  catch(e){j={error:"Sorgu sunucusuna ulaşılamadı. İnternet bağlantısını kontrol edin."}}
+  if(edvFor!=imei||!$("#edv"))return; // bu arada IMEI değişti ya da form kapandı
+  if(j.ok){curEdv={imei,durum:j.durum,sinif:j.sinif,kaynak:j.kaynak,tarih:j.tarih,model:j.model};edvBox(edvHtml(curEdv));return}
+  if(j.captcha){
+    edvState=j.captcha.state;
+    edvBox(`<div class="card" style="margin:8px 0 0"><div class="b">e-Devlet doğrulama kodu istiyor</div>${j.captcha.error?`<div class="out" style="font-size:14px">${esc(j.captcha.error)}</div>`:""}
+    <img src="${esc(j.captcha.img)}" alt="Doğrulama kodu resmi" style="display:block;margin:8px 0;max-width:100%;background:#fff;border-radius:8px">
+    <div class="row"><input id="f_edvcode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Resimdeki kodu yazın"><button class="btn p" type="button" data-edvsend>Gönder</button></div></div>`);
+    $("#f_edvcode").focus();return;
+  }
+  edvBox(`<div class="mut" style="margin-top:8px">${esc(j.error||"Sorgu yapılamadı.")} <button class="btn" type="button" data-edvq>Tekrar dene</button></div>`);
+}
 let stream=null,scanTimer=null;
 const luhn=s=>{let t=0;for(let i=0;i<15;i++){let n=+s[14-i];if(i%2){n*=2;if(n>9)n-=9}t+=n}return t%10==0};
 function setImei(v){
   const m=String(v).match(/\d{15}/g)||[];const c=m.find(luhn)||m[0];if(!c)return false;
-  $("#f_imei").value=c;$("#imeiMsg").textContent=luhn(c)?"IMEI okundu.":"IMEI okundu ancak doğrulama hanesi uyuşmuyor, lütfen kontrol edin.";lastTac=c.slice(0,8);fillTac(c);return true;
+  $("#f_imei").value=c;$("#imeiMsg").textContent=luhn(c)?"IMEI okundu.":"IMEI okundu ancak doğrulama hanesi uyuşmuyor, lütfen kontrol edin.";lastTac=c.slice(0,8);fillTac(c);edvImeiChanged(c);return true;
 }
 const mkDet=()=>new BarcodeDetector({formats:["code_128","code_39","ean_13","itf","qr_code","data_matrix"]});
 async function startScan(){
