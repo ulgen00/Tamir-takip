@@ -33,6 +33,7 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+.sheetx{position:sticky;top:0;float:right;z-index:2;margin:-4px -2px 0 8px;width:44px;height:44px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surf);color:var(--ink);font-size:28px;line-height:1;display:grid;place-items:center;cursor:pointer}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
 input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:11px;min-height:46px}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
@@ -98,7 +99,7 @@ function vRepairs(){
   return `<h1>Tamire gelen cihazlar</h1>
   <div class="tabs"><button class="${flt=="all"?"on":""}" data-f="all">Hepsi ${db.repairs.length}</button>${ST.map((s,i)=>`<button class="${flt==i?"on":""}" data-f="${i}">${s} ${counts[i]}</button>`).join("")}</div>
   ${list.length?list.map(r=>`<button class="card item" data-r="${r.id}"><div class="row sp"><span class="b">${esc(r.model)}</span><span class="chip s${r.st}">${ST[r.st]}</span></div>
-  <div class="mut">${esc(r.name)}${r.phone?" · "+esc(r.phone):""}</div><div class="mut">${esc(r.issue)}</div>${r.imei?`<div class="mut">IMEI ${esc(r.imei)}${r.edv?" "+edvChip(r.edv):""}</div>`:""}
+  <div class="mut">${esc(r.name)}${r.phone?" · "+esc(fmtPhone(r.phone)):""}</div><div class="mut">${esc(r.issue)}</div>${r.imei?`<div class="mut">IMEI ${esc(r.imei)}${r.edv?" "+edvChip(r.edv):""}</div>`:""}
   <div class="row sp" style="margin-top:6px"><span class="mut">${dfmt(r.date)}</span><span class="b">${money(r.price)}</span></div></button>`).join(""):`<div class="empty">Henüz cihaz yok. Sağ alttaki + ile ilk cihazı kaydedin.</div>`}`;
 }
 function vCash(){
@@ -128,7 +129,7 @@ function openMenu(){$("#drawer").classList.add("open");$("#drawerbg").classList.
 function closeMenu(){const o=$("#drawer").classList.contains("open");$("#drawer").classList.remove("open");$("#drawerbg").classList.remove("open");$("#drawer").setAttribute("aria-hidden","true");$("#menuBtn").setAttribute("aria-expanded","false");return o}
 function sheet(html){
   closeSheet();const d=document.createElement("div");d.className="sheetbg";d.id="sh";
-  d.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+  d.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><button class="sheetx" data-close aria-label="Kapat">×</button>${html}</div>`;
   d.addEventListener("click",e=>{if(e.target==d)closeSheet()});document.body.appendChild(d);
 }
 function closeSheet(){const s=$("#sh");if(s)s.remove()}
@@ -138,7 +139,7 @@ function repairForm(id){
   const r=db.repairs.find(x=>x.id==id)||{};autoModel="";curEdv=r.edv||null;edvFor=r.edv?r.imei:"";edvState=null;lastTac="";tacIndex();
   sheet(`<h1>${id?"Cihaz detayı":"Yeni cihaz"}</h1>
   <label>Müşteri adı</label><input id="f_name" value="${esc(r.name)}">
-  <label>Telefon numarası</label><input id="f_phone" type="tel" inputmode="tel" value="${esc(r.phone)}">
+  <label>Telefon numarası</label><input id="f_phone" type="tel" inputmode="tel" value="${esc(fmtPhone(r.phone))}" placeholder="0532 123 45 67">
   <label>Cihaz (marka / model)</label><input id="f_model" value="${esc(r.model)}" placeholder="Örn. Samsung A54">
   <label>IMEI</label><div class="row"><input id="f_imei" inputmode="numeric" maxlength="17" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><button class="btn" type="button" data-scan>Barkod tara</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
   <label>Arıza / yapılacak iş</label><textarea id="f_issue" rows="2">${esc(r.issue)}</textarea>
@@ -147,7 +148,7 @@ function repairForm(id){
   <label>Durum</label><select id="f_st">${ST.map((s,i)=>`<option value="${i}" ${(r.st??0)==i?"selected":""}>${s}</option>`).join("")}</select>
   <div class="row" style="margin-top:16px;flex-wrap:wrap"><button class="btn p" data-save-r="${id||""}">Kaydet</button>
   ${id&&r.st<3?`<button class="btn" data-deliver="${id}">Teslim et ve tahsil et</button>`:""}
-  ${id&&r.phone?`<a class="btn" href="tel:${esc(r.phone)}">Ara</a>`:""}
+  ${id&&r.phone?`<a class="btn" href="tel:${esc(r.phone.replace(/[^\d+]/g,""))}">Ara</a>`:""}
   ${id?`<button class="btn d" data-del-r="${id}">Sil</button>`:""}<button class="btn" data-close>Kapat</button></div>`);
 }
 function txForm(id){
@@ -263,7 +264,22 @@ let lastTac="";
 // Telefon numarası: yazmaya başlarken başına 0 gelir (+90 ile yazılırsa dokunulmaz)
 document.addEventListener("focusin",e=>{const t=e.target;if(t.id=="f_phone"&&!t.value){t.value="0";t.setSelectionRange(1,1)}});
 document.addEventListener("focusout",e=>{const t=e.target;if(t.id=="f_phone"&&t.value.trim()=="0")t.value=""});
-document.addEventListener("input",e=>{const t=e.target;if(t.id=="f_phone"&&t.value&&!/^[0+]/.test(t.value)){t.value="0"+t.value;t.setSelectionRange(t.value.length,t.value.length)}});
+// 0532 123 45 67 biçimi (+90 ile yazılırsa +90 532 123 45 67)
+function fmtPhone(v){
+  v=String(v||"");let d=v.replace(/\D/g,"");
+  if(v.trim().startsWith("+")){if(!d.startsWith("90"))return v;d=d.slice(2,12);return "+90"+[d.slice(0,3),d.slice(3,6),d.slice(6,8),d.slice(8,10)].filter(Boolean).map(x=>" "+x).join("")}
+  d=d.slice(0,11);return [d.slice(0,4),d.slice(4,7),d.slice(7,9),d.slice(9,11)].filter(Boolean).join(" ");
+}
+document.addEventListener("input",e=>{
+  const t=e.target;if(t.id!="f_phone")return;
+  let v=t.value,pos=t.selectionStart??v.length;const prev=t._prev||"";
+  // Sadece bir boşluk silindiyse, önündeki rakamı da sil (yoksa silme tuşu takılı kalır)
+  if(e.inputType=="deleteContentBackward"&&v.replace(/\D/g,"")==prev.replace(/\D/g,"")&&pos>0){v=v.slice(0,pos-1)+v.slice(pos);pos--}
+  if(v&&!/^[0+]/.test(v)){v="0"+v;pos++}
+  const keep=v.slice(0,pos).replace(/\s/g,"").length,f=fmtPhone(v);
+  let i=0,n=0;while(i<f.length&&n<keep){if(f[i]!=" ")n++;i++}
+  t.value=f;t._prev=f;try{t.setSelectionRange(i,i)}catch(e){}
+});
 document.addEventListener("input",e=>{if(e.target.id=="f_imei"){const v=e.target.value.replace(/\D/g,"");
   if(v.length>=8&&(v.slice(0,8)!=lastTac||v.length==15)){lastTac=v.slice(0,8);fillTac(v)}else if(v.length<8)lastTac="";
   edvImeiChanged(v)}});
