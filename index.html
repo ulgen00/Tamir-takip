@@ -260,6 +260,10 @@ async function fillTac(c){
   if(!ok)msg.textContent+=" Uyarı: IMEI doğrulama hanesi uyuşmuyor, kontrol edin.";
 }
 let lastTac="";
+// Telefon numarası: yazmaya başlarken başına 0 gelir (+90 ile yazılırsa dokunulmaz)
+document.addEventListener("focusin",e=>{const t=e.target;if(t.id=="f_phone"&&!t.value){t.value="0";t.setSelectionRange(1,1)}});
+document.addEventListener("focusout",e=>{const t=e.target;if(t.id=="f_phone"&&t.value.trim()=="0")t.value=""});
+document.addEventListener("input",e=>{const t=e.target;if(t.id=="f_phone"&&t.value&&!/^[0+]/.test(t.value)){t.value="0"+t.value;t.setSelectionRange(t.value.length,t.value.length)}});
 document.addEventListener("input",e=>{if(e.target.id=="f_imei"){const v=e.target.value.replace(/\D/g,"");
   if(v.length>=8&&(v.slice(0,8)!=lastTac||v.length==15)){lastTac=v.slice(0,8);fillTac(v)}else if(v.length<8)lastTac="";
   edvImeiChanged(v)}});
