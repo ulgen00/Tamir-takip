@@ -53,20 +53,26 @@ kesin kayıt değildir.
 
 ## Android uygulaması (APK)
 
-`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.2).
+`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.6).
 Siteye bağlı değildir; internetsiz çalışır (internet yalnızca e-Devlet IMEI sorgusu için gerekir).
 Geliştirmeye bu uygulama üzerinden devam ediliyor; iPhone için web sürümü (`index.html`) kullanılmaya devam ediyor.
 
 - Hazır APK: `apk/cep-atolyesi.apk` (Pages açıksa: `https://ulgen00.github.io/Tamir-takip/apk/cep-atolyesi.apk`)
-- Sayfalar: Tamir, Kasa, Özet, IMEI Sorgula, Ayarlar. Soldan menü ya da alt çubuk (Ayarlar'dan), güneş/ay ile tema.
+- Sayfalar: Tamir, Kasa, Özet, IMEI Sorgula, Ayarlar. Dükkan adı (sol üst ve etiketteki {dukkan}) Ayarlar’dan değişir. Soldan menü ya da alt çubuk (Ayarlar'dan), güneş/ay ile tema.
+- Renk paleti (Ayarlar): Kahve, Okyanus, Orman, Lavanta, Bordo, Gece ya da kaydırıcıyla özel ton; açık ve koyu temada.
+  Yazı ve vurgu renkleri her tonda okunabilir kontrasta (WCAG) ayarlanır (`ui/Theme.kt`).
 - IMEI: yazınca/yapıştırınca marka/model (önce dükkanın kendi kayıtları, sonra uygulama içindeki `tac/`
   veritabanı), 15 hane olunca e-Devlet kaydı (Worker üzerinden, `X-Cep-Atolyesi: android` başlığıyla).
 - Barkod: CameraX + Google ML Kit (model uygulamanın içinde), kamera ve galeriden fotoğraf.
 - Kayıtlar telefonda tek bir JSON dosyasında; biçim web sürümüyle aynı. Ayarlar > Yedekleme ile dışa/içe aktarılır.
-- Etiket yazdırma: ağdaki termal etiket yazıcısına (Xprinter, Gprinter vb., TSPL, ham TCP 9100) cihaz formundaki
+- Etiket yazdırma: ağdaki termal etiket yazıcısına (ham TCP 9100; TSPL, ZPL ya da EPL dili Ayarlar'dan seçilir) cihaz formundaki
   "Etiket yazdır" düğmesiyle ya da yeni kayıtta otomatik. Etiket (varsayılan 60x30 mm) uygulamada resim olarak çizilir
   (Türkçe karakterler için) ve BITMAP komutuyla gönderilir: dükkan adı, tarih, müşteri, telefon, model, arıza,
   kayıt no ve barkodu. Yazıcı IP'si, boyut, 180° çevirme ve ters renk Ayarlar'da (`Label.kt`).
+- Yazıcı dili: Xprinter/Gprinter çoğunlukla TSPL, Zebra ZPL, bazı HPRT modelleri EPL/ZPL. Ayarlar'daki "TSPL/ZPL/EPL dene"
+  düğmeleri yazıcının kendi yazı tipiyle dilin adını basan basit bir etiket gönderir; çıkan dil seçilir.
+- Ağda yazıcı arama (Ayarlar > Ağda yazıcı ara): telefonun bağlı olduğu ağın /24 bölümündeki adreslerde 9100
+  portu açık cihazları listeler, dokununca IP ayarlanır. Yazıcıya komut göndermez (`PrinterScan.kt`).
 - Etiket tasarımı (Ayarlar > Etiket tasarımını düzenle): yazı, barkod, QR kod, çizgi ve kutu eklenir; önizlemede
   dokunarak seçilir, sürükleyerek taşınır; yazı boyu, kalınlık, hizalama, boyut ve konum ayarlanır. Yazılarda
   `{ad}`, `{telefon}`, `{model}`, `{ariza}`, `{imei}`, `{tarih}`, `{kayitno}`, `{ucret}`, `{durum}`, `{toptanci}`

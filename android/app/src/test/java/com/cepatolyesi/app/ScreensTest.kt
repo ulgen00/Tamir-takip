@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.Assert.assertEquals
@@ -74,6 +75,24 @@ class ScreensTest {
         rule.onNodeWithText("Yeni cihaz").assertExists()
         rule.onNodeWithContentDescription("Kapat").performClick()
         rule.waitUntil(5_000) { rule.onAllNodes(hasText("Yeni cihaz")).fetchSemanticsNodes().isEmpty() }
+    }
+
+    @Test fun shopName() {
+        val vm = androidx.lifecycle.ViewModelProvider(rule.activity)[AppViewModel::class.java]
+        rule.runOnUiThread { vm.updateNav(NavMode.DRAWER); vm.updateShopName("") }
+        rule.onNodeWithText("Cep Atölyesi").assertExists()                  // varsayılan
+        rule.onNodeWithContentDescription("Seçenekler").performClick(); rule.onNodeWithText("Ayarlar").performClick()
+        field(0).performTextInput("Yıldız Telekom")
+        rule.waitForIdle()
+        assertEquals("Yıldız Telekom", vm.shopTitle)
+        assertEquals(2, rule.onAllNodes(hasText("Yıldız Telekom")).fetchSemanticsNodes().size)   // sol üst + kutu
+        shot("19-dukkan-adi")
+        // Etikette de yeni ad
+        assertEquals("Yıldız Telekom", com.cepatolyesi.app.LabelTemplate.fill("{dukkan}", com.cepatolyesi.app.ui.SAMPLE_REPAIR, vm.shopTitle))
+        // Silinince varsayılana döner
+        field(0).performTextReplacement("")
+        rule.waitForIdle()
+        assertEquals("Cep Atölyesi", vm.shopTitle)
     }
 
     @Test fun tabsAndSettings() {

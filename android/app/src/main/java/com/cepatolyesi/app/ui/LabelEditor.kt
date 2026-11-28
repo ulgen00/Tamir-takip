@@ -124,7 +124,7 @@ fun LabelEditor(vm: AppViewModel, onClose: () -> Unit) {
                 Row(Modifier.padding(vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(enabled = !busy, onClick = {
                         busy = true
-                        scope.launch { val e = LabelPrinter.print(SAMPLE_REPAIR, vm.printer, tpl); busy = false; ask = Triple(e ?: "Deneme etiketi yazıcıya gönderildi.", { ask = null }, null) }
+                        scope.launch { val e = LabelPrinter.print(SAMPLE_REPAIR, vm.printer, tpl, vm.shopTitle); busy = false; ask = Triple(e ?: "Deneme etiketi yazıcıya gönderildi.", { ask = null }, null) }
                     }) { Text(if (busy) "Gönderiliyor…" else "Deneme yazdır") }
                     OutlinedButton(onClick = {
                         ask = Triple("Etiket hazır tasarıma dönsün mü? Yaptığınız değişiklikler silinir.", {
@@ -145,7 +145,7 @@ private fun Preview(
     onSelect: (String?) -> Unit, onMove: (String, Float, Float) -> Unit,
 ) {
     val c = LocalColors.current
-    val bmp = remember(tpl, vm.printer) { LabelPrinter.render(SAMPLE_REPAIR, vm.printer, tpl).asImageBitmap() }
+    val bmp = remember(tpl, vm.printer, vm.shopTitle) { LabelPrinter.render(SAMPLE_REPAIR, vm.printer, tpl, vm.shopTitle).asImageBitmap() }
     val items by rememberUpdatedState(tpl.items)
     val selected by rememberUpdatedState(sel)
     Box(Modifier.fillMaxWidth().background(c.surf).padding(14.dp), contentAlignment = Alignment.Center) {

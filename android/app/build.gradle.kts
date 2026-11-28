@@ -35,8 +35,8 @@ android {
         applicationId = "com.cepatolyesi.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "2.2"
+        versionCode = 8
+        versionName = "2.6"
         // Telefon işlemcileri (x86 yalnızca emülatörde kullanılır; çıkarınca APK yarıya iner)
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }

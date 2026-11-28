@@ -25,6 +25,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var nav by mutableStateOf(runCatching { NavMode.valueOf(prefs.getString("gezinme", "DRAWER")!!) }.getOrDefault(NavMode.DRAWER))
         private set
+    /** Renk paleti (Ayarlar > Renk paleti): hazır palet kimliği ya da "ozel"; ozel için ton (0-360) */
+    var palette by mutableStateOf(prefs.getString("palet", "kahve") ?: "kahve")
+        private set
+    var customHue by mutableStateOf(prefs.getFloat("palet_ton", 200f))
+        private set
+    fun updatePalette(id: String, hue: Float = customHue) {
+        palette = id; customHue = hue
+        prefs.edit().putString("palet", id).putFloat("palet_ton", hue).apply()
+    }
+
+    /** Sol üstte ve etiketlerde görünen dükkan adı (Ayarlar'dan değiştirilir) */
+    var shopName by mutableStateOf(prefs.getString("dukkan", DEFAULT_SHOP) ?: DEFAULT_SHOP)
+        private set
+    fun updateShopName(n: String) { shopName = n; prefs.edit().putString("dukkan", n).apply() }
+    /** Boş bırakılırsa varsayılan ad */
+    val shopTitle: String get() = shopName.trim().ifEmpty { DEFAULT_SHOP }
+
     /** Kasa ve Özet'te gösterilen ay */
     var month by mutableStateOf(YearMonth.now())
 
@@ -34,6 +51,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             ip = prefs.getString("yz_ip", "") ?: "", port = prefs.getInt("yz_port", 9100),
             widthMm = prefs.getInt("yz_gen", 60), heightMm = prefs.getInt("yz_yuk", 30), gapMm = prefs.getInt("yz_bosluk", 2),
             rotate = prefs.getBoolean("yz_cevir", false), invert = prefs.getBoolean("yz_ters", false), autoPrint = prefs.getBoolean("yz_oto", false),
+            lang = prefs.getString("yz_dil", "TSPL") ?: "TSPL",
         )
     )
         private set
@@ -41,7 +59,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updatePrinter(c: PrinterCfg) {
         printer = c
         prefs.edit().putString("yz_ip", c.ip.trim()).putInt("yz_port", c.port).putInt("yz_gen", c.widthMm).putInt("yz_yuk", c.heightMm)
-            .putInt("yz_bosluk", c.gapMm).putBoolean("yz_cevir", c.rotate).putBoolean("yz_ters", c.invert).putBoolean("yz_oto", c.autoPrint).apply()
+            .putInt("yz_bosluk", c.gapMm).putBoolean("yz_cevir", c.rotate).putBoolean("yz_ters", c.invert).putBoolean("yz_oto", c.autoPrint).putString("yz_dil", c.lang).apply()
     }
 
     /** Kullanıcının etiket tasarımı; null ise hazır tasarım (etiket boyuna göre) */
@@ -57,8 +75,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Etiketi yazıcıya gönderir; sonuç mesajı ana iş parçacığında döner. Form kapansa da devam eder. */
     fun printLabel(r: Repair, onDone: (String) -> Unit) {
         val cfg = printer
-        val tpl = currentTemplate()
-        viewModelScope.launch { onDone(LabelPrinter.print(r, cfg, tpl) ?: "Etiket yazıcıya gönderildi.") }
+        val tpl = currentTemplate(); val shop = shopTitle
+        viewModelScope.launch { onDone(LabelPrinter.print(r, cfg, tpl, shop) ?: "Etiket yazıcıya gönderildi.") }
     }
 
     fun updateTheme(t: ThemeMode) { theme = t; prefs.edit().putString("tema", t.name).apply() }

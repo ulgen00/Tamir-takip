@@ -108,6 +108,72 @@ class LabelTest {
         assertTrue(LabelPrinter.send(PrinterCfg(), ByteArray(0))!!.contains("IP adresini girin"))
     }
 
+    /** ZPL ^GFA (onaltılık, 1 = siyah) verisini görüntüye çevirir */
+    private fun decodeZpl(b: ByteArray): Bitmap {
+        val t = String(b, Charsets.US_ASCII)
+        val m = Regex("\\^GFA,(\\d+),(\\d+),(\\d+),([0-9A-F]+)\\^FS").find(t)!!
+        val total = m.groupValues[1].toInt(); val wb = m.groupValues[3].toInt(); val hex = m.groupValues[4]
+        assertEquals(total * 2, hex.length)
+        val h = total / wb
+        val bmp = Bitmap.createBitmap(wb * 8, h, Bitmap.Config.ARGB_8888)
+        for (y in 0 until h) for (bx in 0 until wb) {
+            val v = hex.substring((y * wb + bx) * 2, (y * wb + bx) * 2 + 2).toInt(16)
+            for (bit in 0 until 8) bmp.setPixel(bx * 8 + bit, y, if (v and (0x80 shr bit) != 0) Color.BLACK else Color.WHITE)
+        }
+        return bmp
+    }
+
+    /** EPL GW (0 = siyah) verisini görüntüye çevirir */
+    private fun decodeEpl(b: ByteArray): Bitmap {
+        val t = String(b, Charsets.ISO_8859_1)
+        val m = Regex("GW0,0,(\\d+),(\\d+),").find(t)!!
+        val wb = m.groupValues[1].toInt(); val h = m.groupValues[2].toInt(); val start = m.range.last + 1
+        val bmp = Bitmap.createBitmap(wb * 8, h, Bitmap.Config.ARGB_8888)
+        for (y in 0 until h) for (bx in 0 until wb) {
+            val v = b[start + y * wb + bx].toInt() and 0xFF
+            for (bit in 0 until 8) bmp.setPixel(bx * 8 + bit, y, if (v and (0x80 shr bit) == 0) Color.BLACK else Color.WHITE)
+        }
+        return bmp
+    }
+
+    private fun same(a: Bitmap, b: Bitmap) {
+        assertEquals(a.width, b.width); assertEquals(a.height, b.height)
+        for (y in 0 until a.height) for (x in 0 until a.width) if (a.getPixel(x, y) != b.getPixel(x, y)) throw AssertionError("fark: $x,$y")
+    }
+
+    @Test fun zplAndEpl() = runBlocking {
+        val cfg = PrinterCfg(ip = "127.0.0.1", widthMm = 60, heightMm = 30)
+        val bmp = LabelPrinter.render(sample, cfg)
+        val ref = decodeTspl(LabelPrinter.tspl(bmp, cfg))
+
+        val z = LabelPrinter.zpl(bmp, cfg)
+        val zt = String(z, Charsets.US_ASCII)
+        assertTrue(zt.startsWith("^XA^PW480^LL240^LH0,0^PON^FO0,0^GFA,14400,14400,60,")); assertTrue(zt.endsWith("^FS^PQ1^XZ\r\n"))
+        same(ref, decodeZpl(z))
+        assertEquals("ABQ7XZ", readBarcode(decodeZpl(z)))
+        assertTrue(String(LabelPrinter.zpl(bmp, cfg.copy(rotate = true)), Charsets.US_ASCII).contains("^POI"))
+
+        val e = LabelPrinter.epl(bmp, cfg)
+        val et = String(e, Charsets.ISO_8859_1)
+        assertTrue(et.startsWith("\r\nN\r\nq480\r\nQ240,16\r\nZT\r\nGW0,0,60,240,")); assertTrue(et.endsWith("\r\nP1\r\n"))
+        same(ref, decodeEpl(e))
+        // ters renk her dilde aynı sonucu verir
+        same(decodeTspl(LabelPrinter.tspl(bmp, cfg.copy(invert = true))), decodeZpl(LabelPrinter.zpl(bmp, cfg.copy(invert = true))))
+
+        // Seçili dile göre gönderim ve dil denemesi sahte yazıcıya ulaşıyor
+        for (lang in listOf("TSPL", "ZPL", "EPL")) {
+            val (port, got) = fakePrinter()
+            assertNull(LabelPrinter.print(sample, cfg.copy(port = port, lang = lang)))
+            val txt = String(got(), Charsets.ISO_8859_1)
+            assertTrue(lang, when (lang) { "ZPL" -> txt.startsWith("^XA"); "EPL" -> txt.contains("GW0,0,"); else -> txt.startsWith("SIZE") })
+            val (port2, got2) = fakePrinter()
+            val t0 = System.currentTimeMillis()
+            assertNull(LabelPrinter.send(cfg.copy(port = port2), LabelPrinter.langTest(lang, cfg)))
+            assertTrue("bağlantı bekleyerek kapanmalı", System.currentTimeMillis() - t0 >= 500)
+            assertTrue(String(got2(), Charsets.US_ASCII).contains("$lang CALISIYOR"))
+        }
+    }
+
     @Test fun customTemplate() {
         val cfg = PrinterCfg(widthMm = 60, heightMm = 30)
         val t = LabelTemplate(listOf(

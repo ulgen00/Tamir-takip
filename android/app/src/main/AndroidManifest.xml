@@ -3,6 +3,8 @@
 
     <!-- Yalnızca e-Devlet IMEI sorgusu için; uygulamanın geri kalanı internetsiz çalışır -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ağda yazıcı ararken telefonun ağ adresini öğrenmek için -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Barkod tarama -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />

@@ -15,6 +15,8 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+const val DEFAULT_SHOP = "Cep Atölyesi"
+
 enum class ItemKind(val title: String) { TEXT("Yazı"), BARCODE("Barkod"), QR("QR kod"), LINE("Çizgi"), BOX("Kutu") }
 
 /**
@@ -45,7 +47,7 @@ data class LabelTemplate(val items: List<LabelItem>) {
     companion object {
         /** Kayıttan doldurulabilen alanlar: (etiket, yer tutucu) */
         val FIELDS = listOf(
-            "Müşteri" to "{ad}", "Telefon" to "{telefon}", "Model" to "{model}", "Arıza" to "{ariza}", "IMEI" to "{imei}",
+            "Dükkan" to "{dukkan}", "Müşteri" to "{ad}", "Telefon" to "{telefon}", "Model" to "{model}", "Arıza" to "{ariza}", "IMEI" to "{imei}",
             "Tarih" to "{tarih}", "Kayıt no" to "{kayitno}", "Ücret" to "{ucret}", "Durum" to "{durum}", "Toptancı" to "{toptanci}",
         )
 
@@ -69,7 +71,7 @@ data class LabelTemplate(val items: List<LabelItem>) {
             fun t(text: String, x: Float, y: Float, w: Float, size: Float, bold: Boolean = false, align: Int = 0) =
                 LabelItem(kind = ItemKind.TEXT, text = text, x = x * sx, y = y * sy, w = w * sx, size = size * sz, bold = bold, align = align)
             return LabelTemplate(listOf(
-                t("CEP ATÖLYESİ", 1.5f, 0.9f, 34f, 2.5f, bold = true),
+                t("{dukkan}", 1.5f, 0.9f, 34f, 2.5f, bold = true),
                 t("{tarih}", 25f, 0.9f, 33.5f, 2.5f, align = 2),
                 LabelItem(kind = ItemKind.LINE, x = 1.5f * sx, y = 4.1f * sy, w = 57f * sx, h = 0.25f),
                 t("{ad}", 1.5f, 4.8f, 57f, 4f, bold = true),
@@ -83,8 +85,10 @@ data class LabelTemplate(val items: List<LabelItem>) {
         }
 
         /** {alan} yer tutucularını kayıttaki bilgiyle doldurur */
-        fun fill(text: String, r: Repair): String {
+        /** shop: Ayarlar'daki dükkan adı */
+        fun fill(text: String, r: Repair, shop: String = DEFAULT_SHOP): String {
             val v = mapOf(
+                "{dukkan}" to shop,
                 "{ad}" to r.name, "{telefon}" to fmtPhone(r.phone), "{model}" to r.model, "{ariza}" to r.issue.replace('\n', ' '),
                 "{imei}" to r.imei, "{tarih}" to dfmt(r.date), "{kayitno}" to LabelPrinter.jobNo(r.id),
                 "{ucret}" to if (r.price > 0) money(r.price) else "", "{durum}" to STATUSES[r.st.coerceIn(0, 3)], "{toptanci}" to r.sup,
@@ -95,7 +99,7 @@ data class LabelTemplate(val items: List<LabelItem>) {
         }
 
         /** Şablonu verilen kayıtla resim olarak çizer (siyah-beyaz, yazıcının çözünürlüğünde) */
-        fun render(t: LabelTemplate, r: Repair, cfg: PrinterCfg): Bitmap {
+        fun render(t: LabelTemplate, r: Repair, cfg: PrinterCfg, shop: String = DEFAULT_SHOP): Bitmap {
             val d = cfg.dpi / 25.4f
             val bmp = Bitmap.createBitmap(max(8, (cfg.widthMm * d).roundToInt()), max(8, (cfg.heightMm * d).roundToInt()), Bitmap.Config.ARGB_8888)
             val c = Canvas(bmp)
@@ -105,7 +109,7 @@ data class LabelTemplate(val items: List<LabelItem>) {
                 val x = it.x * d; val y = it.y * d; val w = it.w * d; val h = it.h * d
                 when (it.kind) {
                     ItemKind.TEXT -> {
-                        val s = fill(it.text, r); if (s.isEmpty()) continue
+                        val s = fill(it.text, r, shop); if (s.isEmpty()) continue
                         val p = Paint().apply {
                             color = Color.BLACK; textSize = it.size * d; isAntiAlias = false
                             typeface = if (it.bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
@@ -116,13 +120,13 @@ data class LabelTemplate(val items: List<LabelItem>) {
                         c.drawText(txt, tx, y - p.ascent(), p)
                     }
                     ItemKind.BARCODE -> {
-                        val s = fill(it.text, r); if (s.isEmpty()) continue
+                        val s = fill(it.text, r, shop); if (s.isEmpty()) continue
                         val m = runCatching { Code128Writer().encode(s, BarcodeFormat.CODE_128, 0, 0) }.getOrNull() ?: continue
                         val mod = max(1, (w / m.width).toInt())
                         for (k in 0 until m.width) if (m.get(k, 0)) c.drawRect(x + k * mod, y, x + (k + 1) * mod, y + h, black)
                     }
                     ItemKind.QR -> {
-                        val s = fill(it.text, r); if (s.isEmpty()) continue
+                        val s = fill(it.text, r, shop); if (s.isEmpty()) continue
                         val side = min(w, h).toInt(); if (side < 8) continue
                         val m = runCatching {
                             QRCodeWriter().encode(s, BarcodeFormat.QR_CODE, side, side, mapOf(EncodeHintType.MARGIN to 0, EncodeHintType.CHARACTER_SET to "UTF-8"))
