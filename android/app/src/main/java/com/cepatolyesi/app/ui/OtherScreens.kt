@@ -57,6 +57,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -303,7 +306,8 @@ fun SettingsScreen(vm: AppViewModel, padding: PaddingValues) {
 @Composable
 private fun PaletteSection(vm: AppViewModel) {
     val dark = when (vm.theme) { com.cepatolyesi.app.ThemeMode.AUTO -> androidx.compose.foundation.isSystemInDarkTheme(); com.cepatolyesi.app.ThemeMode.DARK -> true; else -> false }
-    Text("Renk paleti", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
+    val summary = if (vm.palette == "ozel") "Özel ton (${vm.customHue.toInt()}°)" else PALETTES.firstOrNull { it.id == vm.palette }?.name ?: "Kahve"
+    ExpandRow("Renk paleti", summary, Icons.Filled.Palette, "palet") {
     Text("Uygulamanın renkleri. Açık/koyu tema sağ üstteki güneş ve ay düğmeleriyle seçilir.", style = mutStyle)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
         PALETTES.forEach { p -> Swatch(p.name, colorsFor(p.id, 0f, dark), vm.palette == p.id) { vm.updatePalette(p.id) } }
@@ -316,6 +320,30 @@ private fun PaletteSection(vm: AppViewModel) {
             .background(androidx.compose.ui.graphics.Brush.horizontalGradient((0..12).map { androidx.compose.ui.graphics.Color.hsl(it * 30f % 360f, 0.55f, if (dark) 0.68f else 0.40f) }), androidx.compose.foundation.shape.RoundedCornerShape(6.dp)))
         androidx.compose.material3.Slider(vm.customHue, { vm.updatePalette("ozel", it) }, valueRange = 0f..359f,
             modifier = Modifier.testTag("palet-ton"))
+    }
+    }
+}
+
+/** Dokununca açılıp kapanan ayar satırı; kapalıyken başlık ve o anki ayarın özeti görünür */
+@Composable
+fun ExpandRow(title: String, summary: String, icon: androidx.compose.ui.graphics.vector.ImageVector, key: String, content: @Composable () -> Unit) {
+    val c = LocalColors.current
+    var open by androidx.compose.runtime.saveable.rememberSaveable(key) { mutableStateOf(false) }
+    val turn by androidx.compose.animation.core.animateFloatAsState(if (open) 180f else 0f, label = "ok")
+    Column(Modifier.padding(top = 8.dp).fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+        .background(c.surf).border(1.dp, c.line, androidx.compose.foundation.shape.RoundedCornerShape(12.dp))) {
+        Row(Modifier.fillMaxWidth().clickable(onClickLabel = if (open) "Kapat" else "Aç") { open = !open }.padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = c.acc, modifier = Modifier.padding(end = 12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold)
+                Text(summary, style = mutStyle, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            }
+            Icon(Icons.Filled.ExpandMore, if (open) "Daralt" else "Genişlet", tint = c.mut, modifier = Modifier.graphicsLayer { rotationZ = turn })
+        }
+        androidx.compose.animation.AnimatedVisibility(open) {
+            Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) { content() }
+        }
     }
 }
 
@@ -356,9 +384,10 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
         ip = ip.trim(), port = num(port, 9100, 1..65535), widthMm = num(wmm, 60, 20..120), heightMm = num(hmm, 30, 10..120), gapMm = num(gap, 2, 0..10),
     ))
 
-    Text("Etiket yazıcısı", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
+    val summary = if (cfg.ip.isBlank()) "Ayarlanmadı" else "${cfg.ip}:${cfg.port} · ${cfg.lang} · ${cfg.widthMm}x${cfg.heightMm} mm"
+    ExpandRow("Etiket yazıcısı", summary, Icons.Filled.Print, "yazici") {
     Text("Ağdaki termal etiket yazıcısı (Wi-Fi ya da kabloyla modeme bağlı). Yazıcı telefonla aynı ağda olmalı; IP adresini “Ağda yazıcı ara” bulur ya da yazıcının ağ ayarları fişinde yazar.", style = mutStyle)
-    AppCard {
+    Column {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(2f)) {
                 Label("IP adresi")
@@ -431,6 +460,7 @@ private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
                 say(err ?: "Deneme etiketi yazıcıya gönderildi.")
             }
         }) { Text(if (busy) "Gönderiliyor…" else "Deneme etiketi yazdır") }
+    }
     }
 }
 
