@@ -50,3 +50,25 @@ Tarayıcı e-Devlet'e doğrudan bağlanamadığı için sorgu küçük bir Cloud
 
 `EDV_API` boşken bu özellik görünmez. Sonuç bilgilendirme amaçlıdır; e-Devlet'in kendi notuna göre
 kesin kayıt değildir.
+
+## Android uygulaması (APK)
+
+`android/` klasöründe, GitHub Pages'teki uygulamayı açan bir Android kabuğu var. Uygulama her
+açılışta sitenin güncel halini yüklediği için sitede yapılan değişiklikler uygulamaya da kendiliğinden
+gelir. Kayıtlar telefonda (WebView depolamasında) kalır; tarayıcıdaki kayıtlarla ortak değildir.
+
+- Hazır APK: `apk/cep-atolyesi.apk` (Pages açıksa: `https://ulgen00.github.io/Tamir-takip/apk/cep-atolyesi.apk`)
+- Kamera izni (barkod), galeriden fotoğraf seçme, `tel:` ile arama ve geri tuşu (önce açık ekranı/menüyü
+  kapatır) Android tarafında ayarlı. İnternet yoksa "bağlantı yok" ekranı açılır.
+
+Derlemek için (Android SDK, platform 35 ve Java 17+ gerekir):
+
+```
+cd android
+echo "sdk.dir=/android/sdk/yolu" > local.properties
+gradle assembleRelease        # çıktı: app/build/outputs/apk/release/app-release.apk
+```
+
+İmza: `android/keystore.properties` dosyası (depoya eklenmez) `storeFile`, `storePassword`, `keyAlias`,
+`keyPassword` içerir. Dosya yoksa APK hata ayıklama anahtarıyla imzalanır. Güncellemelerin telefona
+kurulabilmesi için hep aynı anahtar kullanılmalı. Simgeler `python3 tools/make_icons.py` ile üretilir.
