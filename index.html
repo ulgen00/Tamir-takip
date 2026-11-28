@@ -16,7 +16,7 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);color-scheme:ligh
 html,body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
-main{max-width:640px;margin:0 auto;padding:12px 14px 120px}
+main{max-width:640px;margin:0 auto;padding:12px 14px 96px}
 h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .row{display:flex;gap:8px;align-items:center}.sp{justify-content:space-between}
 .card{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
@@ -30,10 +30,7 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .tabs button.on{background:var(--acc);color:var(--accink);border-color:var(--acc)}
 .btn.p{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:650}
 .btn.d{color:var(--out)}
-nav{position:fixed;left:0;right:0;bottom:0;background:var(--surf);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
-nav button{flex:1;font:inherit;font-size:14px;background:none;border:0;color:var(--mut);padding:12px 4px;min-height:52px;cursor:pointer}
-nav button.on{color:var(--acc);font-weight:700;box-shadow:inset 0 3px 0 var(--acc)}
-.fab{position:fixed;right:16px;bottom:calc(70px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
@@ -46,14 +43,29 @@ input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--
 .scan video{width:100%;max-height:65%;object-fit:cover;border-radius:12px}
 .scanhint{color:#fff;text-align:center}
 a{color:var(--acc)}
-.brand{max-width:640px;margin:0 auto;padding:14px 14px 0;font-weight:700;font-size:23px;letter-spacing:.3px;color:var(--acc)}
+.top{max-width:640px;margin:0 auto;padding:12px 14px 0;display:flex;align-items:center;gap:12px}
+.brand{font-weight:700;font-size:23px;letter-spacing:.3px;color:var(--acc)}
+.menubtn{flex:none;width:44px;height:44px;padding:0;border-radius:12px;border:1px solid var(--line);background:var(--surf);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.drawerbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:15;opacity:0;pointer-events:none;transition:opacity .2s}
+.drawerbg.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(290px,82vw);background:var(--surf);border-right:1px solid var(--line);z-index:16;overflow-y:auto;
+padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(16px + env(safe-area-inset-bottom,0px)) calc(12px + env(safe-area-inset-left,0px));
+display:flex;flex-direction:column;gap:4px;transform:translateX(-100%);visibility:hidden;transition:transform .25s ease,visibility .25s}
+.drawer.open{transform:none;visibility:visible}
+.dhead{display:flex;align-items:center;justify-content:space-between;padding:0 0 10px 8px;font-weight:700;font-size:20px;color:var(--acc)}
+.drawer .dhead button{flex:none;width:44px;min-height:44px;padding:0;justify-content:center;font-size:26px;line-height:1;color:var(--mut)}
+.drawer button{font:inherit;text-align:left;background:none;border:0;color:var(--ink);padding:12px;border-radius:10px;min-height:50px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.drawer button.on{background:var(--b1);color:var(--c1);font-weight:700}
+.dsep{height:1px;background:var(--line);margin:8px 4px}
+@media (prefers-reduced-motion:reduce){.drawer,.drawerbg{transition:none}}
 </style>
 </head>
 <body>
-<header class="brand">Cep Atölyesi</header>
+<header class="top"><button class="menubtn" id="menuBtn" data-menu aria-label="Seçenekler" aria-expanded="false" aria-controls="drawer"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></button><span class="brand">Cep Atölyesi</span></header>
 <main id="app"></main>
 <button class="fab" id="fab" aria-label="Yeni kayıt ekle">+</button>
-<nav id="nav"></nav>
+<div class="drawerbg" id="drawerbg"></div>
+<aside class="drawer" id="drawer" aria-label="Seçenekler" aria-hidden="true"><div class="dhead"><span>Seçenekler</span><button data-menuclose aria-label="Menüyü kapat">×</button></div><div id="drawerNav" style="display:flex;flex-direction:column;gap:4px"></div></aside>
 <script>
 const ST=["Bekliyor","Tamirde","Hazır","Teslim edildi"];
 const CAT_IN=["Tamir","Aksesuar satışı","Diğer gelir"],CAT_OUT=["Parça","Kira","Fatura","Maaş","Diğer gider"];
@@ -74,7 +86,7 @@ function ask(msg,only){return new Promise(res=>{const d=document.createElement("
 const say=m=>ask(m,true);
 
 function render(){
-  $("#nav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}">${t}</button>`).join("")+`<button data-themebtn aria-label="Tema değiştir">Tema: ${themeLabel()}</button>`;
+  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join("")+`<div class="dsep"></div><button data-themebtn><span>Tema</span><span class="mut">${themeLabel()}</span></button>`;
   $("#fab").style.display=view=="sum"?"none":"block";
   $("#app").innerHTML=view=="repairs"?vRepairs():view=="cash"?vCash():vSum();
 }
@@ -109,6 +121,9 @@ function vSum(){
   <div style="margin-top:8px">${ST.slice(0,3).map((s,i)=>`<span class="chip s${i}" style="margin:0 6px 6px 0">${s}: ${db.repairs.filter(r=>r.st==i).length}</span>`).join("")}</div></div>
   <div class="card"><div class="b" style="margin-bottom:6px">Gider dağılımı</div>${Object.keys(cats).length?Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row sp"><span>${esc(k)}</span><span class="out">${money(v)}</span></div>`).join(""):`<div class="mut">Bu ay gider yok.</div>`}</div>`;
 }
+// ---- Sol üstteki seçenekler menüsü (soldan açılır) ----
+function openMenu(){$("#drawer").classList.add("open");$("#drawerbg").classList.add("open");$("#drawer").setAttribute("aria-hidden","false");$("#menuBtn").setAttribute("aria-expanded","true");setTimeout(()=>$("#drawer [data-v].on,#drawer [data-v]")?.focus(),50)}
+function closeMenu(){const o=$("#drawer").classList.contains("open");$("#drawer").classList.remove("open");$("#drawerbg").classList.remove("open");$("#drawer").setAttribute("aria-hidden","true");$("#menuBtn").setAttribute("aria-expanded","false");return o}
 function sheet(html){
   closeSheet();const d=document.createElement("div");d.className="sheetbg";d.id="sh";
   d.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
@@ -148,13 +163,15 @@ const catOpts=(type,sel)=>(type=="in"?CAT_IN:CAT_OUT).map(c=>`<option ${c==sel?"
 
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button,a");if(!b)return;const d=b.dataset;
-  if(d.v){view=d.v;render()}
+  if(d.menu!==undefined)openMenu();
+  else if(d.menuclose!==undefined)closeMenu();
+  else if(d.v){view=d.v;closeMenu();render();scrollTo(0,0)}
   else if(d.f!==undefined){flt=d.f=="all"?"all":+d.f;render()}
   else if(d.m){const [y,m]=month.split("-");month=new Date(y,m-1+ +d.m,1).toISOString().slice(0,7);render()}
   else if(d.r)repairForm(d.r);
   else if(d.t)txForm(d.t);
   else if(b.id=="fab")view=="repairs"?repairForm():txForm();
-  else if(d.themebtn!==undefined)themeSheet();
+  else if(d.themebtn!==undefined){closeMenu();themeSheet()}
   else if(d.themeset)setTheme(d.themeset);
   else if(d.egov!==undefined)copyImei();
   else if(d.scan!==undefined)startScan();
@@ -189,6 +206,8 @@ document.addEventListener("click",async e=>{
   }
   else if(d.delT){if(await ask("Bu kayıt silinsin mi?")){db.tx=db.tx.filter(x=>x.id!=d.delT);save();closeSheet();render()}}
 });
+$("#drawerbg").addEventListener("click",closeMenu);
+document.addEventListener("keydown",e=>{if(e.key=="Escape"&&closeMenu())$("#menuBtn").focus()});
 let theme="auto";try{theme=localStorage.getItem("tamir-tema")||"auto"}catch(e){}
 function applyTheme(){const r=document.documentElement;theme=="auto"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",theme)}
 const themeLabel=()=>({auto:"Otomatik",light:"Açık",dark:"Koyu"})[theme];
