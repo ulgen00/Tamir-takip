@@ -50,3 +50,36 @@ Tarayıcı e-Devlet'e doğrudan bağlanamadığı için sorgu küçük bir Cloud
 
 `EDV_API` boşken bu özellik görünmez. Sonuç bilgilendirme amaçlıdır; e-Devlet'in kendi notuna göre
 kesin kayıt değildir.
+
+## Android uygulaması (APK)
+
+`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.0).
+Siteye bağlı değildir; internetsiz çalışır (internet yalnızca e-Devlet IMEI sorgusu için gerekir).
+Geliştirmeye bu uygulama üzerinden devam ediliyor; iPhone için web sürümü (`index.html`) kullanılmaya devam ediyor.
+
+- Hazır APK: `apk/cep-atolyesi.apk` (Pages açıksa: `https://ulgen00.github.io/Tamir-takip/apk/cep-atolyesi.apk`)
+- Sayfalar: Tamir, Kasa, Özet, IMEI Sorgula, Ayarlar. Soldan menü ya da alt çubuk (Ayarlar'dan), güneş/ay ile tema.
+- IMEI: yazınca/yapıştırınca marka/model (önce dükkanın kendi kayıtları, sonra uygulama içindeki `tac/`
+  veritabanı), 15 hane olunca e-Devlet kaydı (Worker üzerinden, `X-Cep-Atolyesi: android` başlığıyla).
+- Barkod: CameraX + Google ML Kit (model uygulamanın içinde), kamera ve galeriden fotoğraf.
+- Kayıtlar telefonda tek bir JSON dosyasında; biçim web sürümüyle aynı. Ayarlar > Yedekleme ile dışa/içe aktarılır.
+
+Kod düzeni (`android/app/src/main/java/com/cepatolyesi/app/`):
+`Model.kt` (kayıtlar), `Util.kt` (IMEI, telefon, para), `Lookup.kt` (TAC ve e-Devlet), `AppState.kt`
+(ayarlar ve IMEI mantığı), `ui/` (ekranlar).
+
+Derleme ve test (Android SDK platform 35, Java 17+):
+
+```
+cd android
+echo "sdk.dir=/android/sdk/yolu" > local.properties
+gradle testDebugUnitTest      # birim + ekran testleri; ekran görüntüleri app/build/ekranlar/
+gradle assembleRelease        # çıktı: app/build/outputs/apk/release/app-release.apk
+```
+
+Ekran testleri uygulamayı bilgisayarda Android taklidiyle (Robolectric) çalıştırır: cihaz ekleme, zorunlu alanlar,
+IMEI'den model, teslim, kasa, sekmeler, tema ve gerçek bir e-Devlet sorgusu.
+
+İmza: `android/keystore.properties` dosyası (depoya eklenmez) `storeFile`, `storePassword`, `keyAlias`,
+`keyPassword` içerir. Dosya yoksa APK hata ayıklama anahtarıyla imzalanır. Güncellemelerin telefona
+kurulabilmesi için hep aynı anahtar kullanılmalı. Simgeler `python3 tools/make_icons.py` ile üretilir.
