@@ -33,8 +33,15 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+/* Ekran açılırken alttan yukarı yumuşak geliş */
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.sheetbg{animation:fadeIn .4s ease}
+.sheet[role="dialog"]{animation:sheetIn .6s cubic-bezier(.22,.9,.3,1)}
+@media (prefers-reduced-motion:reduce){.sheetbg,.sheet[role="dialog"]{animation:none}}
 .sheet::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-6px auto 6px}
 .sheetx{position:sticky;top:0;float:right;z-index:2;margin:-4px -2px 0 8px;width:44px;height:44px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surf);color:var(--ink);font-size:28px;line-height:1;display:grid;place-items:center;cursor:pointer}
+.req{color:var(--out)}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
 input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:11px;min-height:46px}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
@@ -90,7 +97,7 @@ function ask(msg,only){return new Promise(res=>{const d=document.createElement("
 const say=m=>ask(m,true);
 
 function render(){
-  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["imei","IMEI Sorgula"],["cash","Kasa"],["sum","Özet"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
+  $("#drawerNav").innerHTML=[["repairs","Cihazlar"],["cash","Kasa"],["sum","Özet"],["imei","IMEI Sorgula"]].map(([k,t])=>`<button class="${view==k?"on":""}" data-v="${k}" ${view==k?'aria-current="page"':""}>${t}</button>`).join(""); 
   $("#fab").style.display=view=="sum"||view=="imei"?"none":"block";
   $("#app").innerHTML=view=="repairs"?vRepairs():view=="imei"?vImei():view=="cash"?vCash():vSum();
 }
@@ -163,9 +170,9 @@ const val=id=>$("#"+id).value.trim();
 function repairForm(id){
   const r=db.repairs.find(x=>x.id==id)||{};autoModel="";curEdv=r.edv||null;edvFor=r.edv?r.imei:"";edvState=null;lastTac="";tacIndex();
   sheet(`<h1>${id?"Cihaz detayı":"Yeni cihaz"}</h1>
-  <label>Müşteri adı</label><input id="f_name" value="${esc(r.name)}">
-  <label>Telefon numarası</label><input id="f_phone" type="tel" inputmode="tel" value="${esc(fmtPhone(r.phone))}" placeholder="0532 123 45 67">
-  <label>Cihaz (marka / model)</label><input id="f_model" value="${esc(r.model)}" placeholder="Örn. Samsung A54">
+  <label for="f_name">Müşteri adı <span class="req">*</span></label><input id="f_name" required autocomplete="off" value="${esc(r.name)}">
+  <label for="f_phone">Telefon numarası <span class="req">*</span></label><input id="f_phone" required type="tel" inputmode="tel" value="${esc(fmtPhone(r.phone))}" placeholder="0532 123 45 67">
+  <label for="f_model">Cihaz (marka / model) <span class="req">*</span></label><input id="f_model" required value="${esc(r.model)}" placeholder="Örn. Samsung A54">
   <label>IMEI</label><input id="f_imei" inputmode="numeric" maxlength="17" autocomplete="off" value="${esc(r.imei)}" placeholder="15 haneli IMEI"><div class="row" style="margin-top:8px"><button class="btn" type="button" data-pasteimei>Yapıştır</button><button class="btn" type="button" data-scan>Barkod tara</button></div><div class="mut" id="imeiMsg">IMEI’yi öğrenmek için telefondan *#06# tuşlayın.</div><div id="edv" aria-live="polite">${edvHtml(r.edv)}</div>
   <label>Arıza / yapılacak iş</label><textarea id="f_issue" rows="2">${esc(r.issue)}</textarea>
   <div class="g2"><div><label>Ücret (₺)</label><input id="f_price" type="number" inputmode="decimal" value="${r.price??""}"></div><div><label>Parça maliyeti (₺)</label><input id="f_cost" type="number" inputmode="decimal" value="${r.cost??""}"></div></div>
@@ -208,7 +215,9 @@ document.addEventListener("click",async e=>{
   else if(d.close!==undefined)closeSheet();
   else if(d.tt){$("#f_type").value=d.tt;b.parentNode.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x==b));$("#f_cat").innerHTML=catOpts(d.tt)}
   else if(d.saveR!==undefined){
-    if(!val("f_model")){await say("Cihaz modelini yazın.");return}
+    // Zorunlu alanlar: müşteri adı, telefon (en az 10 rakam), cihaz modeli
+    const bad=!val("f_name")?["f_name","Müşteri adını yazın."]:val("f_phone").replace(/\D/g,"").length<10?["f_phone","Müşterinin telefon numarasını yazın (ör. 0532 123 45 67)."]:!val("f_model")?["f_model","Cihaz modelini yazın."]:null;
+    if(bad){await say(bad[1]);$("#"+bad[0])?.focus();return}
     const o={name:val("f_name"),phone:val("f_phone"),model:val("f_model"),issue:val("f_issue"),imei:val("f_imei"),sup:val("f_sup"),price:+val("f_price")||0,cost:+val("f_cost")||0,st:+$("#f_st").value};
     const prev=d.saveR?db.repairs.find(x=>x.id==d.saveR):null;
     o.edv=curEdv&&curEdv.imei==o.imei?curEdv:(prev&&prev.imei==o.imei&&prev.edv)||null;
