@@ -12,6 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import com.cepatolyesi.app.ui.AppRoot
 import com.cepatolyesi.app.ui.AppTheme
+import com.cepatolyesi.app.ui.colorsFor
 
 class MainActivity : ComponentActivity() {
     private val vm: AppViewModel by viewModels()
@@ -26,7 +27,7 @@ class MainActivity : ComponentActivity() {
                 val style = if (dark) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
             }
-            AppTheme(dark) { AppRoot(vm, dark) }
+            AppTheme(dark, colorsFor(vm.palette, vm.customHue, dark)) { AppRoot(vm, dark) }
         }
     }
 }

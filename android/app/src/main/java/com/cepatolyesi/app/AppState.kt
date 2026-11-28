@@ -25,6 +25,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var nav by mutableStateOf(runCatching { NavMode.valueOf(prefs.getString("gezinme", "DRAWER")!!) }.getOrDefault(NavMode.DRAWER))
         private set
+    /** Renk paleti (Ayarlar > Renk paleti): hazır palet kimliği ya da "ozel"; ozel için ton (0-360) */
+    var palette by mutableStateOf(prefs.getString("palet", "kahve") ?: "kahve")
+        private set
+    var customHue by mutableStateOf(prefs.getFloat("palet_ton", 200f))
+        private set
+    fun updatePalette(id: String, hue: Float = customHue) {
+        palette = id; customHue = hue
+        prefs.edit().putString("palet", id).putFloat("palet_ton", hue).apply()
+    }
+
     /** Sol üstte ve etiketlerde görünen dükkan adı (Ayarlar'dan değiştirilir) */
     var shopName by mutableStateOf(prefs.getString("dukkan", DEFAULT_SHOP) ?: DEFAULT_SHOP)
         private set

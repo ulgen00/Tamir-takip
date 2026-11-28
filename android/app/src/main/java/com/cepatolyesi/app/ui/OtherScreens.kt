@@ -50,6 +50,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -272,6 +279,8 @@ fun SettingsScreen(vm: AppViewModel, padding: PaddingValues) {
         Text("Sol üstte ve etiketlerde görünür. Boş bırakılırsa “$DEFAULT_SHOP” yazar.", style = mutStyle)
         OutlinedTextField(vm.shopName, { vm.updateShopName(it.take(40)) }, Modifier.fillMaxWidth(), singleLine = true, colors = fieldColors(),
             placeholder = { Text(DEFAULT_SHOP) }, keyboardOptions = KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words))
+        PaletteSection(vm)
+
         Text("Sekmelerin yeri", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
         Option("Soldan menü", "Sol üstteki ☰ düğmesiyle ya da ekranın sol kenarından sağa kaydırarak açılır.", vm.nav == NavMode.DRAWER) { vm.updateNav(NavMode.DRAWER) }
         Option("Alt çubuk", "Sekmeler ekranın altında, her zaman görünür.", vm.nav == NavMode.BOTTOM) { vm.updateNav(NavMode.BOTTOM) }
@@ -287,6 +296,41 @@ fun SettingsScreen(vm: AppViewModel, padding: PaddingValues) {
         Text("Sürüm ${BuildConfigInfo.versionName(ctx)}", style = mutStyle, modifier = Modifier.padding(top = 16.dp))
     }
     ask?.let { (t, yes, no) -> AskDialog(t, yes, no) }
+}
+
+/** Renk paleti: hazır paletler ve özel ton */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PaletteSection(vm: AppViewModel) {
+    val dark = when (vm.theme) { com.cepatolyesi.app.ThemeMode.AUTO -> androidx.compose.foundation.isSystemInDarkTheme(); com.cepatolyesi.app.ThemeMode.DARK -> true; else -> false }
+    Text("Renk paleti", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
+    Text("Uygulamanın renkleri. Açık/koyu tema sağ üstteki güneş ve ay düğmeleriyle seçilir.", style = mutStyle)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
+        PALETTES.forEach { p -> Swatch(p.name, colorsFor(p.id, 0f, dark), vm.palette == p.id) { vm.updatePalette(p.id) } }
+        Swatch("Özel", colorsFor("ozel", vm.customHue, dark), vm.palette == "ozel") { vm.updatePalette("ozel") }
+    }
+    if (vm.palette == "ozel") {
+        Text("Renk tonu", style = mutStyle, modifier = Modifier.padding(top = 8.dp))
+        // Ton kaydırıcısının arkasında gökkuşağı şeridi
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(12.dp).padding(horizontal = 10.dp)
+            .background(androidx.compose.ui.graphics.Brush.horizontalGradient((0..12).map { androidx.compose.ui.graphics.Color.hsl(it * 30f % 360f, 0.55f, if (dark) 0.68f else 0.40f) }), androidx.compose.foundation.shape.RoundedCornerShape(6.dp)))
+        androidx.compose.material3.Slider(vm.customHue, { vm.updatePalette("ozel", it) }, valueRange = 0f..359f,
+            modifier = Modifier.testTag("palet-ton"))
+    }
+}
+
+@Composable
+private fun Swatch(name: String, colors: AppColors, selected: Boolean, onClick: () -> Unit) {
+    val c = LocalColors.current
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(72.dp)
+        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).clickable(onClickLabel = name, onClick = onClick).padding(4.dp)) {
+        androidx.compose.foundation.layout.Box(Modifier.size(52.dp).clip(androidx.compose.foundation.shape.CircleShape).background(colors.bg)
+            .border(if (selected) 3.dp else 1.dp, if (selected) c.acc else c.line, androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.layout.Box(Modifier.size(26.dp).clip(androidx.compose.foundation.shape.CircleShape).background(colors.acc))
+        }
+        Text(name, fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.padding(top = 4.dp))
+    }
 }
 
 /** Ağdaki etiket yazıcısı ayarları ve deneme etiketi */
