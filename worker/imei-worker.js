@@ -31,11 +31,9 @@ class Jar {
 }
 
 async function req(jar, url, opt = {}) {
-  const res = await fetch(url, {
-    ...opt,
-    redirect: "manual",
-    headers: { "User-Agent": UA, "Accept-Language": "tr-TR,tr;q=0.9", Referer: PAGE, Cookie: jar.header, ...(opt.headers || {}) },
-  });
+  const headers = { "User-Agent": UA, "Accept-Language": "tr-TR,tr;q=0.9", Accept: "text/html,application/json,*/*", Referer: PAGE, ...(opt.headers || {}) };
+  if (jar.header) headers.Cookie = jar.header; // boş Cookie başlığı e-Devlet'te 520 hatasına yol açıyor
+  const res = await fetch(url, { ...opt, redirect: "manual", headers });
   jar.add(res);
   return res;
 }

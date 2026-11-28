@@ -44,7 +44,7 @@ Tarayıcı e-Devlet'e doğrudan bağlanamadığı için sorgu küçük bir Cloud
    (ör. adı `cep-atolyesi-imei`), **Edit code** ile `worker/imei-worker.js` içeriğini yapıştırıp
    **Deploy** deyin.
 2. Worker'ın adresini (`https://cep-atolyesi-imei.<hesap>.workers.dev`) `index.html` içindeki
-   `const EDV_API="";` satırına yazın.
+   `const EDV_API` satırına yazın (şu an: `https://cep-atolyesi-imei.hvt8b9y5zt.workers.dev`).
 3. Uygulama `https://ulgen00.github.io` dışında bir adreste yayınlanıyorsa, Worker ayarlarında
    `ALLOWED_ORIGINS` değişkenine o adresi ekleyin (virgülle ayırarak birden fazla yazılabilir).
 

@@ -247,7 +247,7 @@ document.addEventListener("keydown",e=>{if(e.target.id=="f_edvcode"&&e.key=="Ent
 // ---- e-Devlet IMEI kayıt sorgusu ----
 // Sorgu, worker/imei-worker.js ile kurulan Cloudflare Worker üzerinden yapılır (tarayıcı
 // e-Devlet'e doğrudan bağlanamaz). Adres boşsa bu özellik gizlenir.
-const EDV_API="";
+const EDV_API="https://cep-atolyesi-imei.hvt8b9y5zt.workers.dev";
 let curEdv=null,edvFor="",edvState=null;
 const EDV_L={kayitli:["Kayıtlı","s2"],kayitsiz:["Kayıtsız","s4"],kapali:["Kapalı","s4"],bilinmiyor:["Durum","s3"]};
 const edvChip=e=>e&&EDV_L[e.sinif]?`<span class="chip ${EDV_L[e.sinif][1]}">${EDV_L[e.sinif][0]}</span>`:"";
