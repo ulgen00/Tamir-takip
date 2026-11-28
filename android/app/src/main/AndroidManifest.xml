@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Yalnızca e-Devlet IMEI sorgusu için; uygulamanın geri kalanı internetsiz çalışır -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Barkod tarama için kamera -->
+    <!-- Barkod tarama -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
-    <!-- Telefon arama bağlantıları (tel:) için -->
     <queries>
         <intent>
             <action android:name="android.intent.action.DIAL" />
@@ -23,12 +22,14 @@
         android:supportsRtl="false"
         android:theme="@style/AppTheme">
 
+        <!-- ML Kit barkod modeli uygulamanın içinde gelir; indirme gerekmez -->
+        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|uiMode|smallestScreenSize|density"
             android:windowSoftInputMode="adjustResize"
-            android:launchMode="singleTask">
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|smallestScreenSize|density">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

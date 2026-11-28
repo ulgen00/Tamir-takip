@@ -12,7 +12,7 @@
 //     |  {error:"..."}
 //
 // Ortam değişkeni ALLOWED_ORIGINS: izin verilen site adresleri, virgülle ayrılmış
-// (varsayılan: https://ulgen00.github.io).
+// (varsayılan: https://ulgen00.github.io). Android uygulaması "X-Cep-Atolyesi: android" başlığını gönderir.
 
 const BASE = "https://www.turkiye.gov.tr";
 const PAGE = BASE + "/imei-sorgulama";
@@ -165,7 +165,9 @@ export default {
   async fetch(request, env) {
     const allowed = (env.ALLOWED_ORIGINS || "https://ulgen00.github.io").split(",").map(s => s.trim()).filter(Boolean);
     const origin = request.headers.get("Origin") || "";
-    const ok = allowed.includes("*") || allowed.includes(origin);
+    // Cep Atölyesi Android uygulaması tarayıcı olmadığı için Origin yerine kendi başlığını gönderir
+    const fromApp = request.headers.get("X-Cep-Atolyesi") === "android";
+    const ok = fromApp || allowed.includes("*") || allowed.includes(origin);
     const cors = {
       "Access-Control-Allow-Origin": ok ? (allowed.includes("*") ? "*" : origin) : "null",
       "Access-Control-Allow-Methods": "POST, OPTIONS",

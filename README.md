@@ -53,21 +53,32 @@ kesin kayıt değildir.
 
 ## Android uygulaması (APK)
 
-`android/` klasöründe, GitHub Pages'teki uygulamayı açan bir Android kabuğu var. Uygulama her
-açılışta sitenin güncel halini yüklediği için sitede yapılan değişiklikler uygulamaya da kendiliğinden
-gelir. Kayıtlar telefonda (WebView depolamasında) kalır; tarayıcıdaki kayıtlarla ortak değildir.
+`android/` klasöründe Kotlin + Jetpack Compose ile yazılmış **yerel** Android uygulaması var (sürüm 2.0).
+Siteye bağlı değildir; internetsiz çalışır (internet yalnızca e-Devlet IMEI sorgusu için gerekir).
+Geliştirmeye bu uygulama üzerinden devam ediliyor; iPhone için web sürümü (`index.html`) kullanılmaya devam ediyor.
 
 - Hazır APK: `apk/cep-atolyesi.apk` (Pages açıksa: `https://ulgen00.github.io/Tamir-takip/apk/cep-atolyesi.apk`)
-- Kamera izni (barkod), galeriden fotoğraf seçme, `tel:` ile arama ve geri tuşu (önce açık ekranı/menüyü
-  kapatır) Android tarafında ayarlı. İnternet yoksa "bağlantı yok" ekranı açılır.
+- Sayfalar: Tamir, Kasa, Özet, IMEI Sorgula, Ayarlar. Soldan menü ya da alt çubuk (Ayarlar'dan), güneş/ay ile tema.
+- IMEI: yazınca/yapıştırınca marka/model (önce dükkanın kendi kayıtları, sonra uygulama içindeki `tac/`
+  veritabanı), 15 hane olunca e-Devlet kaydı (Worker üzerinden, `X-Cep-Atolyesi: android` başlığıyla).
+- Barkod: CameraX + Google ML Kit (model uygulamanın içinde), kamera ve galeriden fotoğraf.
+- Kayıtlar telefonda tek bir JSON dosyasında; biçim web sürümüyle aynı. Ayarlar > Yedekleme ile dışa/içe aktarılır.
 
-Derlemek için (Android SDK, platform 35 ve Java 17+ gerekir):
+Kod düzeni (`android/app/src/main/java/com/cepatolyesi/app/`):
+`Model.kt` (kayıtlar), `Util.kt` (IMEI, telefon, para), `Lookup.kt` (TAC ve e-Devlet), `AppState.kt`
+(ayarlar ve IMEI mantığı), `ui/` (ekranlar).
+
+Derleme ve test (Android SDK platform 35, Java 17+):
 
 ```
 cd android
 echo "sdk.dir=/android/sdk/yolu" > local.properties
+gradle testDebugUnitTest      # birim + ekran testleri; ekran görüntüleri app/build/ekranlar/
 gradle assembleRelease        # çıktı: app/build/outputs/apk/release/app-release.apk
 ```
+
+Ekran testleri uygulamayı bilgisayarda Android taklidiyle (Robolectric) çalıştırır: cihaz ekleme, zorunlu alanlar,
+IMEI'den model, teslim, kasa, sekmeler, tema ve gerçek bir e-Devlet sorgusu.
 
 İmza: `android/keystore.properties` dosyası (depoya eklenmez) `storeFile`, `storePassword`, `keyAlias`,
 `keyPassword` içerir. Dosya yoksa APK hata ayıklama anahtarıyla imzalanır. Güncellemelerin telefona
