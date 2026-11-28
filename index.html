@@ -226,6 +226,32 @@ document.addEventListener("click",async e=>{
   else if(d.delT){if(await ask("Bu kayıt silinsin mi?")){db.tx=db.tx.filter(x=>x.id!=d.delT);save();closeSheet();render()}}
 });
 $("#drawerbg").addEventListener("click",closeMenu);
+// Sol kenardan sağa kaydırınca menüyü aç; açıkken sola kaydırınca kapat
+(function(){
+  const dr=$("#drawer"),bg=$("#drawerbg");let x0=null,y0=0,dx=0,drag=false,w=0;
+  const clear=()=>{for(const el of [dr,bg])el.style.transition=el.style.transform=el.style.visibility=el.style.opacity=el.style.pointerEvents="";drag=false;x0=null};
+  document.addEventListener("touchstart",e=>{
+    x0=null;if(e.touches.length!=1||$("#sh")||$("#scan"))return;
+    const t=e.touches[0];if(!dr.classList.contains("open")&&t.clientX>28)return;
+    x0=t.clientX;y0=t.clientY;dx=0;drag=false;w=dr.offsetWidth;
+  },{passive:true});
+  document.addEventListener("touchmove",e=>{
+    if(x0==null)return;const t=e.touches[0],ddx=t.clientX-x0,ddy=t.clientY-y0,open=dr.classList.contains("open");
+    if(!drag){
+      if(Math.abs(ddx)<8&&Math.abs(ddy)<8)return;
+      if(Math.abs(ddy)>Math.abs(ddx)||(open?ddx>0:ddx<0)){x0=null;return}
+      drag=true;dr.style.transition=bg.style.transition="none";dr.style.visibility="visible";bg.style.pointerEvents="none";
+    }
+    dx=ddx;const pos=Math.min(0,open?dx:dx-w);
+    dr.style.transform=`translateX(${pos}px)`;bg.style.opacity=String(Math.max(0,1+pos/w));e.preventDefault();
+  },{passive:false});
+  document.addEventListener("touchend",()=>{
+    if(x0==null||!drag){x0=null;return}
+    const open=dr.classList.contains("open"),go=open?dx<-60:dx>60;clear();
+    if(go)open?closeMenu():openMenu();
+  });
+  document.addEventListener("touchcancel",()=>{if(drag)clear()});
+})();
 document.addEventListener("keydown",e=>{if(e.key=="Escape"&&closeMenu())$("#menuBtn").focus()});
 let theme="auto";try{theme=localStorage.getItem("tamir-tema")||"auto"}catch(e){}
 // Sağ üstteki güneş/ay düğmeleri: seçilene kadar telefonun ayarı takip edilir, seçilen düğme vurgulanır.
