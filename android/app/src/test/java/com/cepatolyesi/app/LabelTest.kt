@@ -198,6 +198,7 @@ class LabelTest {
         val vm = androidx.lifecycle.ViewModelProvider(rule.activity)[AppViewModel::class.java]
         rule.runOnUiThread { vm.updateNav(NavMode.DRAWER); vm.updateTemplate(null) }
         rule.onNodeWithContentDescription("Seçenekler").performClick(); rule.onNodeWithText("Ayarlar").performClick()
+        rule.onNodeWithText("Etiket yazıcısı").performScrollTo().performClick(); rule.waitForIdle()
         rule.onNodeWithText("Etiket tasarımını düzenle").performScrollTo().performClick()
         rule.waitForIdle(); captureScreenRoboImage("build/ekranlar/36-tasarim-ekrani.png")
 
@@ -247,6 +248,7 @@ class LabelTest {
         // × formu kapatıyor mu
         rule.waitUntil(5_000) { rule.onAllNodes(hasText("Yeni cihaz")).fetchSemanticsNodes().isEmpty() }
         rule.onNodeWithContentDescription("Seçenekler").performClick(); rule.onNodeWithText("Ayarlar").performClick()
+        rule.onNodeWithText("Etiket yazıcısı").performScrollTo().performClick()
         rule.waitForIdle(); captureScreenRoboImage("build/ekranlar/33-ayarlar-yazici.png")
         rule.onNodeWithText("Deneme etiketi yazdır").performScrollTo(); rule.waitForIdle()
         captureScreenRoboImage("build/ekranlar/34-ayarlar-yazici-alt.png")

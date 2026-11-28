@@ -64,6 +64,11 @@ class PaletteTest {
         val vm = androidx.lifecycle.ViewModelProvider(rule.activity)[AppViewModel::class.java]
         rule.runOnUiThread { vm.updateNav(NavMode.DRAWER); vm.updateTheme(ThemeMode.LIGHT); vm.updatePalette("kahve") }
         rule.onNodeWithContentDescription("Seçenekler").performClick(); rule.onNodeWithText("Ayarlar").performClick()
+        // Kapalıyken paletler görünmez, satırda seçili palet yazar
+        rule.onNodeWithText("Okyanus").assertDoesNotExist()
+        rule.onNodeWithText("Kahve").assertExists()
+        captureScreenRoboImage("build/ekranlar/49-ayarlar-kapali.png")
+        rule.onNodeWithText("Renk paleti").performScrollTo().performClick(); rule.waitForIdle()
         rule.onNodeWithText("Okyanus").performScrollTo().performClick(); rule.waitForIdle()
         assertEquals("okyanus", vm.palette)
         captureScreenRoboImage("build/ekranlar/50-palet-okyanus.png")

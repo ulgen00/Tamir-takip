@@ -66,6 +66,8 @@ class PrinterScanTest {
         val vm = androidx.lifecycle.ViewModelProvider(rule.activity)[AppViewModel::class.java]
         rule.runOnUiThread { vm.updateNav(NavMode.DRAWER); vm.updatePrinter(PrinterCfg()) }
         rule.onNodeWithContentDescription("Seçenekler").performClick(); rule.onNodeWithText("Ayarlar").performClick()
+        rule.onNodeWithText("Ayarlanmadı").assertExists()   // kapalı satırda özet
+        rule.onNodeWithText("Etiket yazıcısı").performScrollTo().performClick(); rule.waitForIdle()
         rule.onNodeWithText("Ağda yazıcı ara").performScrollTo().performClick()
         rule.waitUntil(10_000) { rule.onAllNodes(hasText("127.0.0.1")).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Seç").performScrollTo(); rule.waitForIdle()
@@ -74,6 +76,10 @@ class PrinterScanTest {
         assertEquals("127.0.0.1", vm.printer.ip); assertEquals(9100, vm.printer.port)
         assertEquals(2, rule.onAllNodes(hasText("Seçili")).fetchSemanticsNodes().size)   // menü seçeneği + seçilen yazıcı
         captureScreenRoboImage("build/ekranlar/41-yazici-secildi.png")
+        // Satır kapatılınca özette seçilen yazıcı görünür
+        rule.onNodeWithText("Etiket yazıcısı").performScrollTo().performClick(); rule.waitForIdle()
+        rule.onNodeWithText("127.0.0.1:9100 · TSPL · 60x30 mm").assertExists()
+        rule.onNodeWithText("Ağda yazıcı ara").assertDoesNotExist()
         ss.close()
     }
 }
