@@ -33,6 +33,7 @@ h1{font-size:22px;margin:6px 0 12px;letter-spacing:-.3px}
 .fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-6px auto 6px}
 .sheetx{position:sticky;top:0;float:right;z-index:2;margin:-4px -2px 0 8px;width:44px;height:44px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surf);color:var(--ink);font-size:28px;line-height:1;display:grid;place-items:center;cursor:pointer}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
 input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:11px;min-height:46px}
@@ -130,7 +131,24 @@ function closeMenu(){const o=$("#drawer").classList.contains("open");$("#drawer"
 function sheet(html){
   closeSheet();const d=document.createElement("div");d.className="sheetbg";d.id="sh";
   d.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><button class="sheetx" data-close aria-label="Kapat">×</button>${html}</div>`;
-  d.addEventListener("click",e=>{if(e.target==d)closeSheet()});document.body.appendChild(d);
+  d.addEventListener("click",e=>{if(e.target==d)closeSheet()});document.body.appendChild(d);swipeClose(d);
+}
+// Ekranı en üstteyken aşağı doğru kaydırınca kapat
+function swipeClose(bg){
+  const sh=bg.querySelector(".sheet");let y0=null,dy=0,drag=false;
+  const reset=()=>{sh.style.transition="transform .2s ease";sh.style.transform="";bg.style.background="";drag=false;y0=null};
+  sh.addEventListener("touchstart",e=>{y0=e.touches.length==1?e.touches[0].clientY:null;dy=0;drag=false},{passive:true});
+  sh.addEventListener("touchmove",e=>{
+    if(y0==null)return;const d=e.touches[0].clientY-y0;
+    if(!drag){if(d>8&&sh.scrollTop<=0)drag=true;else{if(Math.abs(d)>8)y0=null;return}}
+    dy=Math.max(0,d);sh.style.transition="none";sh.style.transform=`translateY(${dy}px)`;
+    bg.style.background=`rgba(0,0,0,${(.45*Math.max(0,1-dy/500)).toFixed(3)})`;e.preventDefault();
+  },{passive:false});
+  sh.addEventListener("touchend",()=>{
+    if(!drag){y0=null;return}
+    if(dy>Math.min(120,sh.offsetHeight*.25)){sh.style.transition="transform .18s ease";sh.style.transform="translateY(100%)";setTimeout(closeSheet,170)}else reset();
+  });
+  sh.addEventListener("touchcancel",()=>{if(drag)reset()});
 }
 function closeSheet(){const s=$("#sh");if(s)s.remove()}
 const val=id=>$("#"+id).value.trim();
