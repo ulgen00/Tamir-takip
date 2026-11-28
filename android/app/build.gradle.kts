@@ -35,8 +35,8 @@ android {
         applicationId = "com.cepatolyesi.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "2.0"
+        versionCode = 3
+        versionName = "2.1"
         // Telefon işlemcileri (x86 yalnızca emülatörde kullanılır; çıkarınca APK yarıya iner)
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
@@ -99,6 +99,8 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$camerax")
     implementation("androidx.camera:camera-view:$camerax")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    // Etiketteki kayıt numarası barkodu (Code128) için
+    implementation("com.google.zxing:core:3.5.3")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

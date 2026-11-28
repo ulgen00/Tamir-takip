@@ -2,6 +2,7 @@ package com.cepatolyesi.app.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -23,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -141,9 +143,11 @@ fun RepairSheet(vm: AppViewModel, id: String?, onClose: () -> Unit) {
     }
     val fName = remember { FocusRequester() }; val fPhone = remember { FocusRequester() }; val fModel = remember { FocusRequester() }
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val recId = remember { old?.id ?: uid() }  // etiketteki kayıt no kaydetmeden önce de sabit kalsın
+    var printing by remember { mutableStateOf(false) }
 
     fun build(): Repair = Repair(
-        id = old?.id ?: uid(), date = old?.date ?: today(), name = name.trim(), phone = phone.text.trim(), model = model.trim(),
+        id = recId, date = old?.date ?: today(), name = name.trim(), phone = phone.text.trim(), model = model.trim(),
         issue = issue.trim(), imei = imei.imei, sup = sup.trim(), price = parseAmount(price), cost = parseAmount(cost),
         st = status, edv = imei.edvFor(imei.imei) ?: old?.edv?.takeIf { it.imei == imei.imei },
     )
@@ -159,11 +163,13 @@ fun RepairSheet(vm: AppViewModel, id: String?, onClose: () -> Unit) {
     }
 
     ModalBottomSheet(onDismissRequest = onClose, sheetState = sheet, containerColor = LocalColors.current.bg) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).imePadding().navigationBarsPadding()) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Başlık ve × sabit; form altında kayar
+        Column(Modifier.fillMaxWidth().imePadding().navigationBarsPadding()) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(if (old == null) "Yeni cihaz" else "Cihaz detayı", style = androidx.compose.material3.MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                 IconButton(onClick = onClose) { Icon(Icons.Filled.Close, "Kapat") }
             }
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp)) {
             Label("Müşteri adı", true)
             OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth().focusRequester(fName), singleLine = true, colors = fieldColors(),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words))
@@ -201,7 +207,21 @@ fun RepairSheet(vm: AppViewModel, id: String?, onClose: () -> Unit) {
             StatusField(status) { status = it }
 
             FlowRow(Modifier.padding(top = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { if (validate()) { st.upsertRepair(build()); onClose() } }) { Text("Kaydet", fontWeight = FontWeight.Bold) }
+                Button(onClick = {
+                    if (validate()) {
+                        val r = build(); st.upsertRepair(r)
+                        // Yeni kayıtta otomatik etiket (Ayarlar'dan açılır); form kapansa da arka planda gönderilir
+                        if (old == null && vm.printer.autoPrint) vm.printLabel(r) { msg -> Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show() }
+                        onClose()
+                    }
+                }) { Text("Kaydet", fontWeight = FontWeight.Bold) }
+                OutlinedButton(enabled = !printing, onClick = {
+                    if (name.isBlank() && model.isBlank()) { ask = Triple("Etiket için en azından müşteri adını ve cihaz modelini yazın.", { ask = null }, null); return@OutlinedButton }
+                    printing = true
+                    vm.printLabel(build()) { msg -> printing = false; ask = Triple(msg, { ask = null }, null) }
+                }) {
+                    Icon(Icons.Filled.Print, null, Modifier.padding(end = 6.dp)); Text(if (printing) "Gönderiliyor…" else "Etiket yazdır")
+                }
                 if (old != null && old.st < 3) OutlinedButton(onClick = {
                     val r = build()
                     ask = Triple("${money(r.price)} tahsil edilip kasaya gelir olarak eklensin mi?", {
@@ -216,6 +236,7 @@ fun RepairSheet(vm: AppViewModel, id: String?, onClose: () -> Unit) {
                 }) { Text("Sil", color = LocalColors.current.out) }
             }
             Spacer(Modifier.height(8.dp))
+            }
         }
     }
     ask?.let { (t, yes, no) -> AskDialog(t, yes, no) }

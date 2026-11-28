@@ -69,6 +69,13 @@ class ScreensTest {
         assertEquals(3, vm.store.repairs[0].st)
     }
 
+    @Test fun closeButtonClosesSheet() {
+        rule.onNodeWithContentDescription("Yeni kayıt ekle").performClick()
+        rule.onNodeWithText("Yeni cihaz").assertExists()
+        rule.onNodeWithContentDescription("Kapat").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasText("Yeni cihaz")).fetchSemanticsNodes().isEmpty() }
+    }
+
     @Test fun tabsAndSettings() {
         rule.onNodeWithContentDescription("Seçenekler").performClick()
         shot("10-menu")

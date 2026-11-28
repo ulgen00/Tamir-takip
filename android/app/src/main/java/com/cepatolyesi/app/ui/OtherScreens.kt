@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -58,7 +59,9 @@ import com.cepatolyesi.app.BuildConfigInfo
 import com.cepatolyesi.app.CAT_IN
 import com.cepatolyesi.app.CAT_OUT
 import com.cepatolyesi.app.ImeiState
+import com.cepatolyesi.app.LabelPrinter
 import com.cepatolyesi.app.NavMode
+import com.cepatolyesi.app.PrinterCfg
 import com.cepatolyesi.app.STATUSES
 import com.cepatolyesi.app.Tx
 import com.cepatolyesi.app.amountText
@@ -67,6 +70,7 @@ import com.cepatolyesi.app.money
 import com.cepatolyesi.app.parseAmount
 import com.cepatolyesi.app.today
 import com.cepatolyesi.app.uid
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -125,11 +129,13 @@ fun TxSheet(vm: AppViewModel, id: String?, onClose: () -> Unit) {
     if (cat !in cats) cat = cats[0]
 
     ModalBottomSheet(onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = LocalColors.current.bg) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).imePadding().navigationBarsPadding()) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Başlık ve × sabit; form altında kayar
+        Column(Modifier.fillMaxWidth().imePadding().navigationBarsPadding()) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(if (old == null) "Yeni kayıt" else "Kaydı düzenle", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                 IconButton(onClick = onClose) { Icon(Icons.Filled.Close, "Kapat") }
             }
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FChip("Gelir", type == "in") { type = "in" }
                 FChip("Gider", type == "out") { type = "out" }
@@ -163,6 +169,7 @@ fun TxSheet(vm: AppViewModel, id: String?, onClose: () -> Unit) {
                 }) { Text("Sil", color = LocalColors.current.out) }
             }
             Spacer(Modifier.height(8.dp))
+            }
         }
     }
     if (pickDate) {
@@ -260,6 +267,8 @@ fun SettingsScreen(vm: AppViewModel, padding: PaddingValues) {
         Option("Soldan menü", "Sol üstteki ☰ düğmesiyle ya da ekranın sol kenarından sağa kaydırarak açılır.", vm.nav == NavMode.DRAWER) { vm.updateNav(NavMode.DRAWER) }
         Option("Alt çubuk", "Sekmeler ekranın altında, her zaman görünür.", vm.nav == NavMode.BOTTOM) { vm.updateNav(NavMode.BOTTOM) }
 
+        PrinterSection(vm) { t -> ask = Triple(t, { ask = null }, null) }
+
         Text("Yedekleme", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
         Text("Kayıtlar yalnızca bu telefonda durur. Telefon değiştirirken ya da kaybolmaya karşı yedek alın. Yedek dosyası web sürümüyle de uyumludur.", style = mutStyle)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -269,6 +278,69 @@ fun SettingsScreen(vm: AppViewModel, padding: PaddingValues) {
         Text("Sürüm ${BuildConfigInfo.versionName(ctx)}", style = mutStyle, modifier = Modifier.padding(top = 16.dp))
     }
     ask?.let { (t, yes, no) -> AskDialog(t, yes, no) }
+}
+
+/** Ağdaki etiket yazıcısı ayarları ve deneme etiketi */
+@Composable
+private fun PrinterSection(vm: AppViewModel, say: (String) -> Unit) {
+    val cfg = vm.printer
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var ip by remember { mutableStateOf(cfg.ip) }
+    var port by remember { mutableStateOf(cfg.port.toString()) }
+    var wmm by remember { mutableStateOf(cfg.widthMm.toString()) }
+    var hmm by remember { mutableStateOf(cfg.heightMm.toString()) }
+    var gap by remember { mutableStateOf(cfg.gapMm.toString()) }
+    fun num(t: String, def: Int, range: IntRange) = t.toIntOrNull()?.coerceIn(range) ?: def
+    fun save(c: PrinterCfg = vm.printer) = vm.updatePrinter(c.copy(
+        ip = ip.trim(), port = num(port, 9100, 1..65535), widthMm = num(wmm, 60, 20..120), heightMm = num(hmm, 30, 10..120), gapMm = num(gap, 2, 0..10),
+    ))
+
+    Text("Etiket yazıcısı", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
+    Text("Ağdaki termal etiket yazıcısı (Xprinter, Gprinter vb., TSPL). Yazıcı telefonla aynı Wi-Fi ağında olmalı; IP adresi yazıcının ağ ayarları fişinde yazar.", style = mutStyle)
+    AppCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(2f)) {
+                Label("IP adresi")
+                OutlinedTextField(ip, { ip = it; save() }, singleLine = true, colors = fieldColors(), placeholder = { Text("192.168.1.50") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+            }
+            Column(Modifier.weight(1f)) {
+                Label("Port")
+                OutlinedTextField(port, { port = it.filter(Char::isDigit); save() }, singleLine = true, colors = fieldColors(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            for ((label, value, set) in listOf(
+                Triple("Genişlik (mm)", wmm) { v: String -> wmm = v },
+                Triple("Yükseklik (mm)", hmm) { v: String -> hmm = v },
+                Triple("Boşluk (mm)", gap) { v: String -> gap = v },
+            )) Column(Modifier.weight(1f)) {
+                Label(label)
+                OutlinedTextField(value, { set(it.filter(Char::isDigit)); save() }, singleLine = true, colors = fieldColors(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            }
+        }
+        SwitchRow("Yeni kayıtta otomatik yazdır", "Kaydet’e basınca etiket kendiliğinden basılır.", cfg.autoPrint) { save(vm.printer.copy(autoPrint = it)) }
+        SwitchRow("Etiketi 180° çevir", "Etiket ters çıkıyorsa açın.", cfg.rotate) { save(vm.printer.copy(rotate = it)) }
+        SwitchRow("Siyah ve beyazı ters çevir", "Zemin siyah, yazılar beyaz çıkıyorsa açın.", cfg.invert) { save(vm.printer.copy(invert = it)) }
+        OutlinedButton(enabled = !busy, modifier = Modifier.padding(top = 8.dp), onClick = {
+            busy = true
+            scope.launch {
+                val sample = com.cepatolyesi.app.Repair("DENEME1", today(), "Deneme Müşteri", "05321234567", "Samsung Galaxy A54", "Ekran değişimi", "", "", 0.0, 0.0, 0, null)
+                val err = LabelPrinter.print(sample, vm.printer)
+                busy = false
+                say(err ?: "Deneme etiketi yazıcıya gönderildi.")
+            }
+        }) { Text(if (busy) "Gönderiliyor…" else "Deneme etiketi yazdır") }
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, desc: String, on: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) { Text(title); Text(desc, style = mutStyle) }
+        Switch(on, onChange)
+    }
 }
 
 @Composable
